@@ -1,0 +1,111 @@
+网络层的功能
+
+    路由：将一个数据包从一个网络（网段）发送到另一个网络（网段）
+    依靠路由器来完成
+
+    路由器的设置过程（直连路由）C
+
+    (config)# inter g 0/1
+    (config-if)# ip address 192.168.1.254 255.255.255.0
+    (config-if)# no shutdown
+    
+    # show ip route
+    # 查看路由表信息
+    C(直连路由) 这条信息中查询ip路由和接口
+
+    路由的配置过程（静态）
+
+    ip route 192.168.2.0   255.255.255.0  192.168.1.2
+             #需要连的网段               #需要连接的下一个路由接口ip    
+
+    s(静态路由) 查看静态路由目标网段 
+    (config-if)#no ip route
+    删除ip路由 路由不会覆盖
+
+默认路由=缺省路由  0.0.0.0/0.0.0.0  S*
+（一般会在企业的网关设备配置）
+
+    (config)# ip route 0.0.0.0 0.0.0.0 192.168.1.2
+                                      #下一跳的路由端口IP
+
+一、 三层交换机
+    (config)# ip routing   #开启路由功能
+
+    (config)# vlan 2  #新建vlan
+
+    (config)# intetface fastEthernet 0/2 #进入0/2接口
+
+    (config-if)# switchpoot access valn 2 #把vlan2加入到0/2接口
+
+    (config)# intetface vlan 2 #进入vlan2
+
+    (config-if)# ip address 192.168.1.254 255.255.255.0 配置vlan ip地址
+
+    同理把vlan 1也作出同样操作    （注：vlan 1 需要手动开起 no shutdown）
+
+
+
+二、三层交换机连二层交换机
+    1， 为三层交换机配置trunk前要先封装 再改trunk
+    (config)# intetface fastEthernet 0/1
+    (config-if)# swichport trunk encapsulation dot1q  #封装
+    (config-if)# swichport mode trunk  #改成trunk
+
+    2，为二层交换机配置trunk
+
+    3，创建vlan 把vlan加入到接口
+
+    4，再做"一"的步骤
+
+
+三、三层交换机连路由器(注：路由器的接口都是默认关闭的，要no shutdown）
+    1，将三层交换机的接口转换为路由器接口
+    (config)# intetface fastEthernet 0/2
+    (config-if)# no swichport
+    2，设置路由器接口IP地址和三层交换机接口的IP
+    (config)# in g 0/0
+    (config-if)# ip address 192.168.4.2 255.255.255.0
+    3，设置路由器静态路由（没有的网段都要设置）
+
+
+四、在三的基础上再连接一台电脑
+    1，先设置路由器IP，电脑IP
+    2，设置三层交换器默认路由 or 静态路由
+
+
+
+动态路由：基于某种路由协议实现（软件）
+    特点：减少管理任务
+          占了些许带宽
+
+OSPF动态路由协议（O）
+    邻居列表
+    链路状态数据库
+    路由表
+
+    1，先删除之前配置的静态路由
+
+    2，开启ospf进程
+    (config)# router ospf 1
+              开启进程1
+	
+    3，设置所有直连网ip（宣告）	
+    (config-router)# network 192.168.4.0 0.0.0.255  area 0
+                             直连网ip    反子网掩码 区域0
+
+
+
+
+
+
+ 
+       
+
+
+
+
+
+
+
+
+

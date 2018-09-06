@@ -1,0 +1,101 @@
+ 
+ set gid 适用于目录
+ set uid 附加在所有者的x位上 x--变为s chmod u+s
+         适用于可执行的文件
+ 
+ Sticky Bit (t权限）
+         附加在其他人的x位上 x--变为t  chmod o+t
+         适用于开放w权限的目录，只能改自己的文件，禁止操作别人的文档
+ 
+ grep -i 忽略大小写查找   greep -i ROOT /etc/passwd
+     
+      -v 取反查找   greeo -v root /etc/passwd  查找没有root行的内容
+     
+      ^root  查找以root开头的内容 grep ^root /etc/passwd
+  
+      bash$  查找以bash结尾的内容 grep bash$ /etc/passwd
+
+      ^$  grep ^$ /etc/passwd 查找空行
+      grep -v ^$ /etc/passwd 查找没有空行的内容
+  
+      ^#  grep ^# /etc/passwd 查找以#开头的注释行
+      grep -v ^# /etc/passwd 查找没有注释行的内容
+
+      grep -v ^# /etc/login.defs | grep -v ^$ 查找没有注释行 没有空行的内容
+     
+查找文件  
+   根据条件递规查找文件 (注意是递规）
+   find [目录] [条件1] [-a|-o] [条件2 ]  
+        -type l 快捷方式 f 文本文件 d 目录
+        find /boot/ -type l 查找 在boot目录下的快捷方式
+
+        -name "  "   (-iname 忽略大小写）
+        find /etc/ -name "*.conf" 查找etc文件下 名字为.conf结尾的文件
+        [root@server0 ~]# find /root/ -name "nsd*"
+        /root/nsd03
+        /root/nsd01.txt
+        /root/nsd02.txt
+        [root@server0 ~]# find /root/ -name "nsd*" -type d
+        /root/nsd03 
+
+        -size
+        [root@server0 ~]# find /boot/ -size +10M
+        /boot/initramfs-3.10.0-123.el7.x86_64.img
+        [root@server0 ~]# find /boot/ -size +300k
+        /boot/grub2/fonts/unicode.pf2
+        /boot/System.map-3.10.0-123.el7.x86_64
+        /boot/vmlinuz-3.10.0-123.el7.x86_64
+  
+        -user 用户
+        [root@server0 ~]# find /home/ -user student
+        /home/student
+        /home/student/.bash_logout
+
+        -group 组名
+        [root@server0 ~]# find / -group student
+        /home/student
+        /home/student/.bash_logout
+
+        -exec cp {} /opt \;
+        例：# find /root/ -name "nsd*" -type f -exec cp {} /opt \;
+             寻找在root目录下 名字以nsd开头的文本文件 复制到 opt文件下
+      
+        -maxdepth 限制查找的的深度
+        例：# find /etc/ -maxdepth 2 -name "*.conf"
+            /etc/yum/version-groups.conf
+            /etc/yum/yum-cron-hourly.conf
+            寻找在etc目录下2层 名字为.conf结尾的文件
+
+        -mtime 根据文件修改时间
+        -mtime +10 过去10天之前
+        -mtime -10 过去10天之内
+       例：# find /var/log -mtime -10 
+           查找最近10天之内/var/log下的文件
+ 
+周期性计划任务（cron计划任务）
+      用途：按照设置的时间间隔为用户反复执行某一项固定的系认任务
+      软件包：cronie  crontabs
+      系统服务：croud
+   *  日志文件：/var/log/crond 
+
+      配置格式：分 时 日 月 周  任务命令行（绝对路径）
+                *  *  *  *  * 
+                0  8  *  *  5   每周5早上8点
+                30 23 *  *  *   每日23：30
+ 
+      *：匹配范围内任意时间
+      ，：分隔不连续的时间点
+      -：指定连续时间范围
+      /n：指定时间频率   每n
+
+      crontab -e 编辑 （-u  指定用户名）
+              -l 查看
+              -r 清除
+
+
+ 
+
+
+
+
+ 

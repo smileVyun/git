@@ -1,0 +1,24 @@
+进入恢复模式：
+    开机重启不停按e两次
+    第一次e：进入恢复模式
+    第二次e：进入编辑模式
+    找到 Linux16 这一行， 按（end）输入 rd.break console=tty0
+    按ctrl+x  按回车
+    输入 mount -o remount,rw /sysroot 回车
+    chroot /sysroot 回车
+    echo 密码 | passwd --stdin root 回车
+    touch /.autorelabel
+    exit
+    reboot
+
+
+关于swap的建立
+    1，fdisk 分区  （有一个没有格式化的分区）
+      #fdisk
+     
+    2，mkswap /dev/vdb   （要变成swap的磁盘）
+
+    3，vim /etc/fstab     
+      /dev/vdb1 swap swap defaults 0 0    
+   
+     4 swapon -a

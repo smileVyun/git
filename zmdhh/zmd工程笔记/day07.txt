@@ -1,0 +1,98 @@
+
+  安全web服务器
+     
+      https  端口 443
+      vim小技巧：在末行模式 :set nu     添加行号
+
+server：
+       1，部署 网站证书 有固定的存放地点
+          # cd /etc/pki/tls/certs/
+          # wget       .crt
+ 
+       2，部署 根证书
+          # cd /etc/pki/tls/certs/
+          # wget 
+          # ls        .crt
+
+       3，部署 私钥 （用于解密）
+          # cd /etc/pki/tls/private
+          # wget      .key
+
+       4，安装可以支持加密web的软件
+          # yum -y install mod_ssl         
+         
+       5，修改配置文件
+          # vim /etc/httpd/conf.d/ssl.conf 
+            59 DocumentRoot "/var/www/html"
+            60 ServerName server0.example.com:443
+
+           100 SSLCertificateFile /etc/pki/tls/certs/server0.crt #指定网站证书
+
+           107 SSLCertificateKeyFile /etc/pki/tls/private/server0.key #指定密钥
+
+           122 SSLCACertificateFile /etc/pki/tls/certs/example-ca.crt #指定根证书
+
+       6，重起服务httpd
+
+
+parted
+ 
+       支持大容量，需用gpt分区模式 有128个主分区
+
+       # lsblk
+
+       # parted /dev/vdb
+(parted) unit GB             # 设置单位
+(parted) mktable  gpt        # 设置
+(parted) print               # 查看
+(parted) mkpart                  
+分区名称？  []? hh                                                        
+文件系统类型？  [ext2]? ext4                                              
+起始点？ 0                                                                
+结束点？ 4G   
+忽略/Ignore/放弃/Cancel? Ignore    
+
+
+基础邮件服务
+ 
+         SMTP：发邮件  25
+         pop3：收邮件  110
+
+      1，装包postfix
+       # yum -y install postfix
+
+      2，修改配置文件
+       # vim /etc/postfix/main.cf  
+  
+       99 myorigin = server0.example.com   #默认补全的域名后缀
+
+       116 inet_interfaces = all    #允许所有网卡
+
+       164 mydestination = server0.example.com   #判断是否为本地邮件
+
+      3，重起服务postfix
+
+使用e-mail 收发邮件
+
+      1，创建用户
+       # useradd zhangsan
+       # useradd lisi
+     
+      2，收发邮件，-s邮件的主题 -r收件人
+       # mail -s 'hahahaha' -r zhangsan lisi
+       haha哈哈
+       .                  # 以.结束
+       EOT
+
+       # mail -u lisi
+       Heirloom Mail version 12.5 7/5/10.  Type ? for help.
+       "/var/mail/lisi": 1 message 1 new
+       >N  1 zhangsan@server0.exa  Wed Apr 18 14:33  18/599   "hahahaha"
+       & 1
+       Message  1:
+
+
+
+
+
+

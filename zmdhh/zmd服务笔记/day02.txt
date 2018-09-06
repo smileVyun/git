@@ -1,0 +1,231 @@
+DNS服务
+
+
+     DNS服务器的功能
+     正向解析：将域名解析为IP地址
+     反向解析：根据IP地址，解析为域名
+
+     所有完整的域名都要以点结尾
+             .为根域
+
+一级域名：.cn  .us  .com  .net
+二级域名：.com.cn  .net.cn
+三级域名：.nb.com.cn   niucha.com.cn
+完整的主机名：www.nb.com.cn  ftp.nb.com.cn 
+
+搭建基本的DNS服务
+
+服务端:A
+     1,装包bind，（bind-chroot）
+
+系统服务名字：named  端口：53
+
+主配置文件 /etc/named.conf     #设置本纪负责解析的域名
+地址库文件 /var/named/         #主机名与IP地址的对应记录
+
+     2，修改主配置文件 /etc/named.conf
+     options {
+             directory       "/var/named";
+     };
+     zone "tedu.cn" IN {
+             type master;
+             file "tedu.cn.zone";
+     };
+
+     3，建立地址库文件 /var/named/tedu.cn.zone
+     # cp -p /var/named/named.localhost /var/named/tedu.cn.zone
+     (cp -p 保持原文件属性，权限不变，进行复制）
+
+     # vim /var/named/tedu.cn.zone
+     tedu.cn.        NS      svr7
+     svr7            A       192.168.4.7
+     www             A       1.1.1.1
+     ftp             A       2.2.2.2
+
+     4，重起服务named
+     # systemctl restart named
+
+客户端B：
+
+     # echo nameserver 192.168.4.7 > /etc/resolv.conf 
+
+     # nslookup www.tedu.cn    (查看这个网站的DNS解释IP地址）
+ 
+添加多个DNS解释器
+
+     # vim /etc/named.conf 
+      zone "qq.com" IN {
+              type master;
+       	      file "qq.com.zone";
+      };
+
+
+特殊的解析记录
+
+     一，DNS轮询
+
+     # vim /var/named/tedu.cn.zone
+     tedu.cn.        NS      svr7
+     svr7            A       192.168.4.7
+     www             A       192.168.4.10
+     www             A       192.168.4.20
+     www             A       192.168.4.45
+     ftp             A       2.2.2.2
+
+     # systemctl restart named
+
+
+     二，泛域名解析
+
+     # vim /var/named/tedu.cn.zone
+     tedu.cn.        NS      svr7
+     svr7            A       192.168.4.7
+     www             A       192.168.4.10
+     www             A       192.168.4.20
+     www             A       192.168.4.45
+     ftp             A       2.2.2.2
+     *               A       5.6.7.8
+
+     # systemctl restart named
+
+     三，有规律的泛域名解析
+
+     # vim /var/named/tedu.cn.zone
+     $GENERATE 造数工具
+
+     tedu.cn.        NS      svr7
+     svr7            A       192.168.4.7
+     www             A       192.168.4.10
+     www             A       192.168.4.20
+     www             A       192.168.4.45
+     ftp             A       2.2.2.2
+     *               A       5.6.7.8
+     $GENERATE 1-50 stu$ A   88.88.88.$
+
+     # systemctl restart named
+
+     四，解析记录的别名
+
+     tts           CNAME     ftp  (tts域名的IP同ftp）
+
+
+DNS子域授权
+
+     
+         父域：www.tedu.cn
+	 子域：www.bj.tedu.cn
+
+子域授权  向父域的DNS 虚拟机A 解析 子域的域名可以等到 虚拟机B 的结果
+
+虚拟机B：
+    # nslookup www.bj.tedu.cn 192.168.4.7
+    Server:		192.168.4.7
+    Address:	192.168.4.7#53
+
+    Name:	www.bj.tedu.cn
+    Address: 5.6.7.8
+
+
+虚拟机A：    
+    1，修改配置文件
+    # vim /var/named/tedu.cn.zone 
+    tedu.cn.        NS      svr7
+    bj.tedu.cn.     NS      pc207
+    pc207           A       192.168.4.207
+    svr7            A       192.168.4.7
+
+    2，重起服务
+    # systemctl restart named
+
+
+虚拟机B：
+    # nslookup www.bj.tedu.cn 192.168.4.7
+    Server:		192.168.4.7
+    Address:	192.168.4.7#53
+
+    Non-authoritative answer:
+    Name:	www.bj.tedu.cn
+    Address: 4.4.48.84
+
+
+DNS解析过程：
+    递规解析：DNS服务器与其他DNS服务器交互，最终将解析结果带回来的过程
+
+    迭代解析：DNS服务器与其他DNS服务器交互，最终告知下个DNS服务器地址
+
+验证迭代查询
+
+    dig命令
+    # dig www.bj.tedu.cn 192.168.4.207
+
+
+缓存DNS
+
+    作用：缓存解析结果，提高解析速度
+
+  搭建方式：
+    1，全局转发，所有的DNS解析请求全部转发给公网DNS
+    2，根域迭代，所有的DNS解析请求全部发给根域DNS服务器（了解）
+
+
+真机上实现缓存DNS服务器
+   
+   1，
+   # mkdir /dvd
+   # rm -rf /etc/yum.repos.d/*
+   # vim /etc/yum.repos.d/zmd.repo
+   [dvd]
+   name=zzzhh
+   baseurl=file:///dvd
+   enabled=1
+   gpgcheck=0
+   # yum repolist
+   # yum -y install bind bind-chroot
+
+
+   2,查看本机的DNS
+   # cat /etc/resolv.conf
+
+   3，真机修改配置文件
+   # vim /etc/named.conf
+   options {
+           directory       "/var/named";
+	   forwarders  { 176.19.0.26; };
+   };
+
+   # systemctl restart named 
+
+   4,虚拟机A
+   # nslookup www.qq.com 192.168.4.254
+   Non-authoritative answer:
+   Name:	www.qq.com
+   Address: 180.163.26.39
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

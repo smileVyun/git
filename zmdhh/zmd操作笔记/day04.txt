@@ -1,0 +1,82 @@
+1,构建memcached服务
+
+   # /usr/lib/systemd/system/ 
+     所有的systemctl的服务都在这个文件下有文件名字
+
+   # yum -y  install   memcached
+   # systemctl  start  memcached
+   # yum -y install telnet
+
+   # telnet  192.168.4.5  11211
+   set name 0 180 3                //定义变量，变量名称为name
+   plj                             //输入变量的值，值为plj                
+   STORED
+   get name                        //获取变量的值
+   VALUE name 0 3                  //输出结果
+   pl
+   END
+   ##提示：0表示不压缩，180为数据缓存时间，3为需要存储的数据字节数量。
+   add myname 0 180 10             //只能新建，存在则报错
+   set myname 0 180 10             //替换变量,没有则新建
+   replace myname 0 180 10         //替换，如果myname不存在则报错
+   get myname                      //读取变量
+   append myname 0 180 10          //向变量中追加数据(10为新增的字符数目)
+   delete myname                   //删除变量
+   stats                           //查看状态
+   flush_all                       //清空所有
+   quit                            //退出登录 
+
+
+二、PHP的本地Session信息
+
+   1，部署LNMP环境
+   2，部署调度服务器
+   # vim /usr/local/nginx/conf/nginx.conf
+   upstream webs  {
+        server 192.168.2.100:80;
+        server 192.168.2.200:80;
+       }
+   server  {
+          listen       80;
+          server_name  localhost;
+          location  /  {
+              proxy_pass http://webs;
+            root   html;
+            index  index.php index.html index.htm;
+          }
+       }
+       注：要把php的内容注释
+   
+   3，重起服务
+
+   4,web1.2上部署后端页面
+   [root@web2 ~]# cd lnmp_soft/php_scripts/
+   [root@web2 php_scripts]# tar -xf php-memcached-demo.tar.gz
+   [root@web2 php_scripts]# cd php-memcached-demo
+   [root@web2 php-memcached-demo]# cp -a  *  /usr/local/nginx/html/
+   同理web1也做同样的操作
+
+   # cd /var/lib/php/session/            //查看服务器本地的Session信息
+   # ls
+   sess_qqek1tmel07br8f63d6v9ch401       //注意这里的ID是随机的
+
+   # google-chrome http://192.168.4.5  用client客户机测试
+
+   5,修改php-fpm配置文件，重起服务
+   # yum -y install  php-pecl-memcache
+
+   [root@web1 ~]# vim  /etc/php-fpm.d/www.conf    //修改该配置文件的两个参数
+   php_value[session.save_handler] = memcache     //
+   php_value[session.save_path] = tcp://192.168.2.5:11211
+
+
+
+
+
+   
+
+
+
+
+
+

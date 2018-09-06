@@ -1,0 +1,114 @@
+sed文本编辑工具(非交互式)
+    --逐行处理
+  
+    用法1:sed [选项] '条件指令' 文件.. ..
+    用法2:前置命令 | sed [选项] '条件指令
+
+    -n（屏蔽默认输出，默认sed会输出读取文档的全部内容）
+    -r（让sed支持扩展正则）
+    -i（修改原文件并保存，默认sed不会修改原文件）
+
+
+
+    sed 不加n 默认会读取全部内容
+ 例:# sed '1p' /etc/hosts   #会读取全部内容，并读取第一行
+    127.0.0.1   localhost localhost.localdomain localhost4.localdomain4
+    127.0.0.1   localhost localhost.localdomain localhost4.localdomain4
+    ::1         localhost localhost.localdomain localhost6.localdomain6
+
+    172.25.254.254 classroom.example.com
+    172.25.254.254 content.example.com
+
+    # sed -n '1p' /etc/hosts  # 只读取第一行
+    127.0.0.1   localhost localhost.localdomain localhost4.localdomain4
+
+    # sed -n '3,6p' /etc/passwd   # 查看3-6行
+
+    # sed -n '5p;7p' /etc/group   # 查看第5行和第7行
+
+    # sed -n '3,+10p' /etc/passwd  # 查看第3行后面的10行
+
+    # sed -n '1~3p' /etc/passwd   # 查看第1行 第4行 第7行 ....
+
+
+    正则案例:
+    # sed -n '/root/p' /etc/passwd # 查看关于有root的行
+    注：查字符的时候 字符两边要加/  /root/
+
+    # sed -n '/bash$/p' /etc/passwd  #查看以bash结尾的行
+    注：用正则 两边要加/ /
+
+    # sed -n '$=' assa  # 查看这个文件的总行号
+    注： = 为显示行号
+
+
+    sed命令的s替换基本功能（替换符/可换成特殊符号# ，等）
+    # sed 's/2017/xxxx/g'  # 把所有2017 替换成xxxx  
+    注： +g 就算替换所有 不加就是替换此行的第一个2017
+
+    # sed 's/2017/xxxx/2'  # 把每行第二个2017改为xxxx
+
+    # sed '4,7s/^/#/' a.txt   # 将第4~7行加注释
+
+    # sed 's/^#an/an/' a.txt  # 将an开头的注释取消
+
+    (ab) (abc) (acbd) \1 \2 \3
+      ( )为复制         \为粘贴
+
+    # sed -r 's/^(.)(.*)(.)$/\3\2\1/' /etc/passwd 
+      # 把第一个和最后一个字母调换
+
+    
+    # sed 's/.//2;s/$.//' a.txt 
+      # 删除每行第二个，最后一个字符
+
+    # sed -r 's/[0-9]//g;s/^( )+//' a.txt
+      # 删除文件中的数字，删除每行开头的空格
+
+    # sed -r 's/([A-Z])/(\1)/g' a.txt
+      # 把文件中A-Z的内容修改为(A-Z)
+
+
+sed多行文本处理
+
+    i：在指定的行之前插入文本
+    a：在指定的行之后追加文本 
+    c：替换指定的行
+
+    # sed  '2c XX'   a.txt  # 把第二行换成XX
+
+案例：
+    找到使用bash作登录Shell的本地用户
+    列出这些用户的shadow密码记录
+    按每行“用户名 --> 密码记录”
+
+    #!/bin/bash
+    user=`sed -n '/bash$/s/:.*//p' /etc/passwd` #先查以bash结尾的行，把：后的内容删除
+      for i in $user
+       do
+         pass=`grep $i /etc/shadow`   
+         pass1=${pass#*:}           #把pass结果的内容：前面的内容删了
+         pass2=${pass1%%:*}         #把pass1结果的内容：后的内容删了
+       echo "$i-->>$pass2"
+       done
+
+   # sed '3r /etc/hosts' a.txt 
+     # 把/etc/hosts 第三行后导入到a.txt
+
+   # sed '2w a.txt' b.txt
+     # 把b.txt中第二行 导入到a.txt
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+   

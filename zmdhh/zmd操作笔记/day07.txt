@@ -1,0 +1,178 @@
+VPN:私有专线网络
+配置GRE VPN
+    1)启用GRE模块(两边都要启用模块)
+    # lsmod                   # 显示模块列表
+    # lsmod  | grep ip_gre    # 确定是否加载了gre模块
+
+    # modprobe  ip_gre        # 加载模块ip_gre
+    # modinfo ip_gre          # 查看模块信息
+
+client:
+    2）创键VPN通道
+    # ip tunnel add tun0  mode gre remote 201.1.2.5 local 201.1.2.10
+      创建ip隧道    名字  模式 gre         对方IP           本机IP
+      (可以ip tunnel help)
+ 
+    # ip link set tun0 up     # 启用隧道tun0
+    # ip link show
+    # ip addr add 10.10.10.10/24 peer 10.10.10.5/24 dev tun0
+      设置隧道tun0的ip 10.10.10.10/24  对面主机的IP10.10.10.5/24
+
+    3)另一台主机同样创建VPN隧道
+    # echo "1" > /proc/sys/net/ipv4/ip_forward
+      开启路由传发
+
+创建PPTP VPN
+
+proxy:
+    [root@proxy vpn]# yum -y install pptpd-1.4.0-2.el7.x86_64.rpm
+    # rpm -qc pptpd            # 查看配置文件
+
+    # vim /etc/pptpd.conf
+    最后一行
+    ...
+    localip 201.1.2.5
+    remoteip 192.168.3.1-50
+
+    # vim /etc/pptpd.conf
+     67 ms-dns 8.8.8.8
+
+    # vim /etc/ppp/chap-secrets
+    llx      *     123456      *
+
+    # echo "1" > /proc/sys/net/ipv4/ip_forward    //开启路由转发
+
+    重起pptpd服务
+
+    # iptables -t nat -A POSTROUTING -s 192.168.3.0/24 -j SNAT --to-source 201.1.2.5   (翻墙才需要打此命令)
+
+  
+创建L2TP+IPSec VPN
+    
+clinet:    
+    一、部署IPSec服务
+    1)装包
+    # yum -y install libreswan
+    
+    2)新建IPSec密钥验证配置文件
+    # cp lnmp_soft/vpn/myipsec.conf  /etc/ipsec.d/
+    # vim /etc/ipsec.d/myipsec.conf
+    left=201.1.2.200             # 服务器的公网IP
+    right=%any                   # 谁能过来访问
+
+    3)创建IPSec预定义共享密钥
+    # vim /etc/ipsec.d/mypass.secrets    # 新建文件
+    201.1.2.200     %any:    PSK     "123456"
+    服务器公网IP   谁能访问 固定格式    密码
+
+    4)重起服务
+    # systemctl start ipsec
+    # netstat -ntulp |grep pluto  查询是否启用
+
+    二、部署XL2TP服务
+    1)装包
+    # yum -y install xl2tpd-1.3.8-2.el7.x86_64.rpm
+
+    2)修改xl2tp配置文件
+    # vim  /etc/xl2tpd/xl2tpd.conf
+     ip range = 192.168.3.128-192.168.3.254       
+     local ip = 201.1.2.200  
+
+    # vim /etc/ppp/options.xl2tpd 
+     10 require-mschap-v2       # 新增的
+     11 #crtscts                # 注释
+     12 idle 1800
+     13 mtu 1410
+     14 mru 1410
+     15 nodefaultroute
+     16 debug
+     17 #lock                   # 注释
+
+    # vim /etc/ppp/chap-secrets 
+     llx  *  123456  *
+
+     3)启动服务
+     # systemctl start xl2tpd
+     # ss -ltunpa | grep xl2tpd 
+
+客户端：xp win2008还需要以下操作
+    单击"开始"，单击"运行"，键入"regedit"，然后单击"确定"
+    找到下面的注册表子项，然后单击它：
+    HKEY_LOCAL_MACHINE\ System\CurrentControlSet\Services\Rasman\Parameters
+    在"编辑"菜单上，单击"新建"->"DWORD值"
+    在"名称"框中，键入"ProhibitIpSec"
+    在"数值数据"框中，键入"1"，然后单击"确定"
+    退出注册表编辑器，然后重新启动计算机
+
+
+NTP时间同步
+服务端proxy:
+    # yum -y install chrony
+    # vim /etc/chrony.conf
+    27 allow 192.168.4.0/24
+    31 local stratum 10
+
+
+pssh远程套件工具
+
+    1，装包
+    [root@proxy lnmp_soft]# rpm -ivh  pssh-2.3.1-5.el7.noarch.rpm
+
+    2，修改本地解析文件和主机列表文件
+    # vim /etc/hosts
+    192.168.2.100 host1
+    192.168.2.200 host2
+    192.168.4.200 host3
+
+    # vim /root/host.txt
+    root@host1
+    host2
+    host3
+
+    3，使用密码批量、多并发远程其他主机
+    # man pssh
+    -A                使用密码远程其他主机（默认使用密钥）
+    -i                将输出显示在屏幕
+    -H                设置需要连接的主机
+    -h                设置主机列表文件
+    -p                设置并发数量
+    -t                设置超时时间
+    -o dir            设置标准输出信息保存的目录(= >)
+    -e dir            设置错误输出信息保存的目录(= 2>)
+    -x                传递参数给ssh
+   
+    # pssh -i -A -H 'host1 host2' -x '-o StrictHostKeyChecking=no' echo hi
+
+    # pssh -i -A -h /root/host.txt -x '-o StrictHostKeyChecking=no' echo hi
+
+    # ssh-keygen -N  ''   -f /root/.ssh/id_rsa 
+      非交互式生成密钥 -f 后面指定自己文件路径
+
+    # ssh-copy-id -i /root/.ssh/id_rsa.pub host1
+      发送密钥到其他主机
+
+    # pssh  -h /root/host.txt -o /tmp echo hi
+      使用密钥远程其他主机，将正确输出信息写入到/tmp目录
+
+    # pscp.pssh -h /root/host.txt /etc/hosts /tmp
+      远程拷贝      根据文件列表   我的文件  对方路径
+
+    # pslurp -r -h host.txt -x  /etc     /tmp
+      远程拷贝对面的           对方文件  我的位置
+
+    # pslurp  -h host.txt  -L /   /etc/hosts  /xx
+      远程拷贝对面的  指定位置/下   对方文件  本地的文件名字
+
+    # pnuke -h host.txt (sleep、test、test.sh)
+      杀死进程          (可以杀死sleep,关于test的脚本,test.sh脚本)
+
+
+
+
+
+
+
+
+
+
+

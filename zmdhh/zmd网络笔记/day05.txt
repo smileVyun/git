@@ -1,0 +1,73 @@
+STP生成树算法
+
+    改优先级：（先比优先级，再比mac地址）以小为优先
+    (config)#spanning-tree vlan 1 root primary 为主优先级
+  or(config)#spanning-tree vlan 1 priority 4096(为4096倍数)  
+      所有三层交换机都要设置vlan优先级
+
+    #show spanning-tree vlan 1 查看生成树vlan 1的配置 FWD转发接口 BLK阻塞接口 
+    备注：当生成树内有一条线路不通，被阻塞的线路将会激活
+    阻塞线在阻塞机器和次级连接的这根线
+
+
+HSRP 热备份路由协议（Cisco私有协议）路由器2个以上 路由器要在同一网段
+    (config)#in vlan 1
+    (config-if)#standby 1 ip 192.168.1.254  #设置虚拟IP
+    (config-if)#standby 1 priority 105  #设置优先级
+     注：另外备份的三层交换机也要设置虚拟IP(要相同）  默认优先级为100
+
+端口跟踪
+    (config)#in vlan 1
+    (config-if)#standby 1 track f 0/1 (10)
+    #把优先级高的三层交换机设置为，断线 优先级暂时-10(f 0/1为连外网断的接口） 
+
+    (config-if)#standby 1 preempt
+    #设置端口抢占功能（都要设置）
+
+    #show standby brief
+    查看热备情况
+
+    (config)# router ospf 1
+    (config)# de  o 
+     把路由器的默认路由告知三层交换机
+
+
+网络设备开启DHCP
+
+     1，先在三层交换机创建并设置vlan ip
+   
+     2，在三层交换机上把vlan加入到对应的接口
+
+     3，开启DHCP
+      (config)# ip dhcp pool vlan10    #创建池
+                    
+      (dhcp-config)# network 192.168.10.0 255.255.255.0   #设置池子内的ip网段 子网掩码
+
+      (dhcp-config)# default-router 192.168.10.254   #设置池子内的网关（和vlan的ip地址相同）
+
+      (dhcp-config)# dns-server 8.8.8.8   #设置dns
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

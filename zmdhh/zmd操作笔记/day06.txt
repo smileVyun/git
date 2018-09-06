@@ -1,0 +1,158 @@
+版本控制Svn基本操作
+web1：
+  1）安装subversion软件
+    # yum -y install subversion
+
+  2）创建版本库
+    # mkdir /var/svn/ 
+    # svnadmin create /var/svn/project
+
+  3）本地导入初始化数据
+    # cd /usr/lib/systemd/system/ 
+    # svn import . file:///var/svn/project/ -m "Init Data"
+    （.为当前目录 svn输入 把当前目录导入到本地的路径 -m "注释"）
+
+  4）修改配置文件，创建账户与密码
+    # vim /var/svn/project/conf/svnserve.conf
+     19 anon-access = none       # 改的内容要顶格
+     20 auth-access = write
+     27 password-db = passwd (密码文件)
+     34 authz-db = authz (ACL访问控制列表)
+
+    # vim /var/svn/project/conf/passwd 
+    [users]
+    harry = 123456
+    llx = 123456
+
+    # vim /var/svn/project/conf/authz 
+     文件最后
+     [/]                  # 仓库的根目录
+    harry = rw
+    llx = rw
+    * = r
+
+  5）启动服务
+    # svnserve -d -r /var/svn/project/
+    (-d 为放入后台 -r为root)
+
+
+web2客户端测试：
+    # yum -y install subversion
+
+    # cd /tmp   (进入到一个空的目录)
+    # svn --username llx --password 123456 co svn://192.168.2.100 code
+    (svn 用户名 密码 checkout svn://地址 目录)
+
+    # cd /tmp/code
+    # vim user.slice
+    # svn ci -m "modify user"           // 将本地修改的数据同步到服务器
+    # svn update                        // 将服务器上新的数据同步到本地
+    # svn info     svn://192.168.2.100    //查看版本仓库基本信息
+    # svn log     svn://192.168.2.100     //查看版本仓库的日志
+
+    # svn add test.sh          //将文件或目录加入版本控制
+    # svn ci -m "new file"     //再次提交，成功,新建的文件必须加入版本控制
+
+    # svn mkdir subdir                // 创建子目录
+    # svn rm timers.target            // 使用svn删除文件
+    # svn ci -m "xxx"                 // 提交一次版本
+    # svn diff (文件)                 // 查看文件的差异
+    # svn cat svn://192.168.2.100/reboot.target    //查看服务器文件的内容
+    # svn revert tmp.mount            // 还原tmp.mount文件
+    # svn merge -r5:2  tuned.service  // 将文件从版本5还原到版本2
+    # svn -r2 co svn://192.168.2.100 a  // 下载版本2到本地a目录下
+
+    windows可以装tortoisesvn
+
+使用Subversion协同工作
+    1）修改不同文件
+    两个不同的客户端，上传数据，都需要svn update更新
+
+    2）修改相同文件的不同行
+    svn ci -m "modified" 提交失败后 更新后就可以提交（两边都要更新）
+
+    3）修改相同文件的相同行
+    上传 更新后 选择标机p
+    # ls
+    tuned.service  tuned.service.mine  tuned.service.r10  tuned.service.r9
+    # mv tuned.service.mine  tuned.service
+    # rm  -rf  tuned.service.r10 tuned.service.r9
+    # svn ci -m "modified"    //解决冲突
+
+使用dump指令备份版本库数据
+web1：
+    # svnadmin dump /var/svn/project > project.bak
+      备份所有版本
+
+    # svnadmin load /var/svn/project2 < project.bak
+      把project.bak的内容还原到project2仓库中
+
+
+git:
+    # yum -y install git
+    # git clone https://github.com/curtainzmd/curtain   # 下载文件到当前目录
+                        网址/      帐号名字  /仓库名字 
+    修改文件
+    # git commit -m "xx"
+    # git push
+
+    新建文件
+    # git add . (把当前 新加的所有文件都识别)
+    # git push
+
+制作nginx的RPM包
+    源码--->RPM包
+web1：
+    # yum -y install  rpm-build
+    # rpmbuild -ba nginx.spec             //会报错，没有文件或目录
+    # ls /root/rpmbuild                   //自动生成的目录结构
+    BUILD  BUILDROOT  RPMS  SOURCES  SPECS  SRPMS
+
+    # cp nginx-1.12.2.tar.gz /root/rpmbuild/SOURCES/  //源码包放入SOURCES中
+
+    修改SPEC配置文件
+    # vim /root/rpmbuild/SPECS/nginx.spec 
+    Name:nginx
+     #不能乱写       
+    Version:1.12.2
+     #不能乱写       
+    Release:12
+    Summary:hh , why you see these, you looks like a pig
+
+    #Group:         
+    License:GPL
+     #开放式协议     
+    URL:www.llx.heiheihei
+    Source0:nginx-1.12.2.tar.gz
+     #不能乱写       
+
+    #BuildRequires: 
+    #Requires:      
+
+    %description
+    I have guns so i can biubiubiu ,you aaaa
+     ...
+    ./configure (--选项)
+     ...
+     %files
+     %doc
+    /usr/local/nginx/*
+
+    # yum -y install  gcc  pcre-devel zlib-devel openssl-devel
+    # rpmbuild -ba /root/rpmbuild/SPECS/nginx.spec
+   
+    # rpm -ivh /root/rpmbuild/RPMS/x86_64/nginx-1.12.2-12.x86_64.rpm    
+         安装rpm包
+
+
+
+    
+
+
+
+
+
+
+
+
+

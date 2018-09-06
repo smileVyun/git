@@ -1,0 +1,14 @@
+SElinux
+    安全的机制---基于内核的
+    保护的对象：文档（文本+目录），进程
+    enforcing   #强制开启
+    permissive  #宽松状态
+    disabled    #禁用机制
+
+    vim /etc/selinux/config
+    SElinux=disanled
+  
+    setenforce 0--permissive
+               1--enforcing
+
+

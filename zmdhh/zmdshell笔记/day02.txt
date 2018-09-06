@@ -1,0 +1,104 @@
+Shell的运算
+
+   1,expr的使用
+     expr 数字 (+,-,\*,/,%) %为取余数 数字
+     # expr 2 \* 2  
+     4
+     注：运算之间有空格
+
+   2,关与$[ ]的运算
+     echo $[2**3]   **为幂  2的3次方
+     8  
+  
+     # a=4 b=6
+     # echo $[a*b]
+     24
+
+   3,关于let的用法
+     # wxy=14
+     # let llx=wxy+9
+     # echo $llx
+     23
+     
+     # x=4
+     # let x+=7    # x=x+7
+     # echo $x
+     11          
+
+   4,bc运算（可运算小数点）
+     # echo "scale=3;4/10" | bc   #scale 为显示小数点后几位
+     0.400  
+
+     bc 做判断
+     # echo "2!=2" | bc
+     0
+     # echo "2==2" | bc
+     1
+
+   5,字符串比较
+     # test $USER == student
+     # echo $?
+     1
+
+     # [ $USER == root ]
+     # echo $?
+     0
+
+
+Shell的常规判断
+    
+     注:(A B为命令)
+     # A && B   A成功后执行B
+     # A || B   A失败后执行B
+     # A ;  B   先执行A 再执行B
+
+     -z 判断是否为空值
+     # llx=555
+     # [ -z $llx ] && echo "ai" || echo "13"
+     13
+
+     # [ 5 -lt 6 ] && echo dui || echo cuo   [ ] 
+     dui
+
+     关于文件的判断
+     # chmod 644 /tmp/test.txt
+     # ls -l /tmp/test.txt
+     -rw-r--r-- 1 root root 0 5月  14 14:32 /tmp/test.txt
+     # [ -x "/tmp/test.txt" ];echo $?
+     1     
+     注:(root用户只有x特殊，没有x权限就是没有x权限,如shell)
+
+     vim cai.sh
+     #!/bin/bash
+     while [ 1 -eq 1 ]
+     do
+     num=$[RANDOM%10+1]
+     read -p "请猜一个1-10的数字:" io
+     if [ $io -eq $num ];then
+     echo 猜对了
+     exit
+     else
+     echo 猜错了
+     fi
+     done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,64 @@
+
+ chown 修改归属  -R递规设置
+ 例： chown gelin01:tarena /nsd05  nsd05文件修改为  用户gelin01 组为tarena
+
+ chmod 修改权限设置 u/ 用户  g/ 所属组  o/其他成员  r wx
+附加权限（特殊权限） 例：chmod g=rwx /nsd01   chmod o+w /nsd01
+
+ set Gid
+ 附加在组上  r-x变为r-s  r--变为r-S  例：chmod g+s 文件
+ 继承父目录的所属组身份 （只包括新增的文件）
+
+ACL权限（ACL策略）
+ 更精确的控制 对个别用户，个别组设置独立的权限
+ setfacl -m u:zhangsan:rx /nsd09 新建ACL权限
+ getfacl /nsd09  查看nsd09的  ACL权限
+ # file: nsd09
+ # owner: root
+ # group: root
+ user::rwx
+ user:zhangsan:r-x
+ group::r-x
+ mask::r-x
+ other::---
+
+ setfacl -x u:zhangsan /nsd09 删除单个ACL权限
+ setfacl -b /nsd10 删除全部ACL权限
+ 
+LDAP认证
+  作用：集中管理网络中的用户帐号 
+
+
+  LDAP
+  服务器 :classroom
+  
+  客户端：server
+   1，安装sssd客户端软件，与服务端LDAP服务端沟通
+      yum -y install sssd
+   2，安装图形工具配置sssd软件
+      yum -y install authconfig-gtk
+   3, 打开 authconfig-gtk 软件
+      dc=example,dc=com
+      classroom.example.com
+      勾选TLS加密  http://classroom.example.com/pub/EXAMPLE-CA-CERT
+   4，验证
+      # systemctl restart sssd       
+      # grep 'ldapuser0'  /etc/passwd
+      # id ldapuser0
+
+  家目录漫游
+    NFS，网络文件系统
+     
+    NFS服务端：classroom.example.com
+    客户端：server
+     1,查看NFS资源
+      # showmount -e classroom.example.com
+     2,访问共享文件夹， 建立访问点
+      # mount classroom.example.com:/home/guests /home/guests
+        挂载  NFS资源地址(or ip地址): 共享文件路径 访问点路径 (2个路径相同）
+    
+    
+
+
+
+

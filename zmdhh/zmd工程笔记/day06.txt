@@ -1,0 +1,239 @@
+HTTP服务基础
+
+     基于B/S架构的网页服务 （客户端服务）
+
+     http：超文本传输协议   端口号 80
+     html：超文本标记语言
+
+
+servername:本站点注册的dns名称
+
+服务端server：
+1,修改配置文件 /etc/httpd/conf/httpd.conf
+               查找关于ServerName的
+搜ServerName 改为 server0.example.com:80
+
+2，重起httpd服务
+
+
+客户端desktop：
+       # firefox server0.example.com:80   可以进入
+
+
+
+服务端server：
+DocumentRoot:网页文件的根目录(/var/www/html)
+
+1,修改配置文件 /etc/httpd/conf/httpd.conf
+   搜Document   DocumentRoot "/var/www/myweb"
+
+   # mkdir /var/www/myweb
+
+   # echo myweb > /var/www/myweb/index.html
+  
+   # systemctl restart httpd
+
+客户端desktop：
+   # firefox server0.example.com     可以进入
+
+
+网页文件的根目录 DocumentRoot /var/www/myweb (这个文件里的路径为起始点 和/相似)
+
+   客户端访问 firefox 172.25.0.11/test    服务端 /var/www/myweb/test/index.html
+   
+
+
+^*^虚拟Web主机
+
+   作用：让一台服务器 提供多个页面
+ 
+   搭建方式：
+       1.基于域名的虚拟Web
+       2.基于端口的虚拟Web
+       3.基于IP地址的虚拟Web
+
+
+基于域名的虚拟Web
+
+   <Virtualhost *:80>
+     Servername  www.qq.com
+     DocumentRoot  /var/www/qq
+   </Virtualhost>
+
+服务端server:
+
+   1,修改配置文件
+   # vim /etc/httpd/conf.d/nsd01.conf   #创建并修改
+  <virtualhost *:80>
+    ServerName www0.example.com
+    DocumentRoot /var/www/nsd01
+  </virtualhost>
+  <virtualhost *:80>
+    ServerName webapp0.example.com
+    DocumentRoot /var/www/nsd02
+  </virtualhost>
+            
+   2,创建网页地址的文件架 并新建网页数据内容
+   # mkdir /var/www/nsd01
+   # mkdir /var/www/nsd02
+
+   # echo nsd01 > /var/www/nsd01/index.html
+   # echo nsd02 > /var/www/nsd02/index.html
+
+   3,重起服务
+   # systemctl restart httpd
+  
+
+客户端desktop:
+
+   # firefox www0.example.com
+   # firefox webapp0.example.com
+
+   使用虚拟web  之前的网站就没用了
+
+
+网页内容访问权限
+
+
+在服务端server上
+   
+   # vim /etc/httpd/conf.d/nsd01.conf
+   <virtualhost *:80>
+   ServerName www0.example.com
+   DocumentRoot /var/www/nsd01
+   </virtualhost>
+   <virtualhost *:80>
+   ServerName webapp0.example.com
+   DocumentRoot /var/www/nsd02
+   </virtualhost>
+   <virtualhost *:80>
+   servername server0.example.com
+   DocumentRoot /var/www/myweb
+   </virtualhost>
+
+  1,查看server0.example.com的DocumentRoot 在/var/www/myweb下创建文件夹
+    # mkdir /var/www/myweb/privite
+   
+  2，在文件下创建新的网页
+    # echo wo shi privite > /var/www/myweb/privite/index.html
+
+  3，重起服务
+    # systemctl restart httpd.service
+
+在desktoop上：
+
+   # firefox server0.example.com/privite   可以访问
+
+
+在服务端server上：
+
+   1，在 /etc/httpd/conf/httpd.conf下查找 /Dire
+      <Directory />
+        AllowOverride none
+        Require all denied
+      </Directory>
+  
+   2，在 /etc/httpd/conf.d/nsd02.conf 下创建新的访问控制文本文件
+      <Directory /var/www/myweb/privite>
+         Require ip 172.25.0.11
+      </Directory>
+ 
+   3, 重起服务 
+
+在desktoop上：
+   
+    # firefox server0.example.com/privite   不可以访问
+
+
+修改访问权限
+
+   1) 新建目录 /webroot,作为此站点新的网页文件根目录
+     # mkdir  /webroot
+     # echo   '<h1>wo  shi  Webroot'  >  /webroot/index.html
+
+   2) 修改配置文件/etc/httpd/conf.d/nsd01.conf
+     <VirtualHost  *:80>
+     ServerName    server0.example.com
+     DocumentRoot  /webroot             #修改网页文件根目录
+     </VirtualHost>
+
+
+
+   3) 追加写入 /etc/httpd/conf.d/nsd02.conf
+       <Directory  "/webroot">
+            Require all granted      #允许所有
+       </Directory>
+
+
+4）SELinux安全上下文（标识，标签）
+
+– chcon [-R] --reference=模板目录    新目录
+
+# ls -Zd /webroot/      #查看目录标签值
+
+# chcon -R  --reference=/var/www    /webroot/
+
+# ls -Zd /webroot/
+
+
+5) 重起httpd服务
+
+检查网站文件在根下需要改的步骤
+    1, 配置文件设置 
+   2，SElinux 安全上下文设置
+    3，防火墙设置
+
+
+
+部署动态网站
+  
+    1，部署动态页面文件
+       # vim /etc/httpd/conf.d/nsd01.conf
+       # cd /var/www/nsd02
+       # wget http://classroom.example.com/pub/materials/webinfo.wsgi
+       # vim webinfo.wsgi
+ 
+
+    2, 方便用户访问，页面的调转
+      
+       server:
+       当客户端访问webapp0.example.com 变为访问  /var/www/nsd02/webinfo.wsgi
+     
+       # vim /etc/httpd/conf.d/nsd01.conf
+         <virtualhost *:80>
+              ServerName webapp0.example.com
+              DocumentRoot /var/www/nsd02
+              alias / /var/www/nsd02/webinfo.wsgi
+
+       # systemctl restart httpd.service 
+
+       desktop:
+       # firefox webapp0.example.com     可以访问到/var/www/nsd02/webinfo.wsgi
+
+    3,安装一个可以解释python页面程序，配置解释该页面
+
+       # yum -y install mod_wsgi
+       # vim /etc/httpd/conf.d/nsd01.conf
+              wsgiscriptalias / /var/www/nsd02/webinfo.wsgi
+
+       # systemctl restart httpd.service
+   
+
+    4,修改端口
+      # vim /etc/httpd/conf.d/nsd01.conf
+       Listen 8909
+       <virtualhost *:8909>
+           ServerName webapp0.example.com
+           DocumentRoot /var/www/nsd02
+           wsgiscriptalias / /var/www/nsd02/webinfo.wsgi
+
+      SELinux 改非默认的开放
+      # semanage port -l | grep http
+   
+      # semanage port -a -t http_port_t -p tcp 8909
+   
+      # systemctl restart httpd.service 
+
+
+
+

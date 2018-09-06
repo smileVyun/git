@@ -1,0 +1,117 @@
+传输层的作用：网络层提供点到点的连接
+              传输层提供端到段的连接(传输层：找到对应的应用进程)
+    传输协议：TCP协议
+              传输控制协议
+	      可靠的、面向连接的协议
+	      传输效率低
+	    
+	      UDP协议
+	      用户数据报协议
+	      不可靠的、无连接服务
+	      传输效率高
+
+
+访问控制列表的类型：标准访问控制列表*
+                   （基于源IP地址过滤数据包），控制列表号1-99
+		    扩展访问控制列表
+		   （更详细的控制）
+
+工作原理：匹配及停止，不出现在匹配内的信息，最后也会被拒绝
+
+
+标准ACL的配置例子：
+
+    (config)#access-list 1 deny 192.168.2.2 0.0.0.0 （or host 192.168.2.2)
+             设置列表1 拒绝192.168.2.2 ip
+
+    (config)#access-list 1 permit any
+             在列表1中允许所有ip
+
+    (config)#in g 0/1
+             进接口模式
+
+    (config-if)#ip access-group 1 in
+                让列表组1 设置为in
+
+NAT作用 网络地址转换 私有ip转换为公有ip
+
+    优点：节省共有合法IP地址
+          处理地址重叠
+	  安全
+    缺点：延迟增大
+          配置和维护比较复杂
+
+实现方式：
+         端口多路复用（客户机）
+         静态转换（服务器） IP地址对应关系 1对1，不会变
+
+设置静态转换操作(静态NAT)：
+
+    (config)#ip nat inside source static 192.168.1.1  100.0.0.2
+                                   静态  当地主机ip   购买的外网ip
+
+    (config)#in g0/0
+
+    (config-if)#ip nat in(or out)
+               设置端口是内网还是外网
+
+端口多路复用(PAT)：
+  
+    (config)#access-list 1 permit 192.168.1.0  0.0.0.255 
+             设置列表1 允许192.168.1.0网段
+       
+    (config)#ip nat inside source list 1 in g0/1    overload
+                                  列表1  和外网连接的接口  复用
+
+跟踪NAT
+
+    # debug ip nat  一般用于查看排错
+      开启排错功能
+
+    # undebug ip nat 
+      关闭排错功能
+
+OSPF动态 
+    (config)#router ospf 1
+    (config-router)#network 192.168.2.0  0.0.0.255 area 0 （宣告网段为和路由器直连的网段）
+
+三层交换机开机路由功能才能使用OSPF
+    (config)#ip routing
+
+
+
+
+    
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

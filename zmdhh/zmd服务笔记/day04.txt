@@ -1,0 +1,164 @@
+
+    DHCP：搭建DHCP服务，用来简化主机地址分配管理
+    DHCP地址分配的四次会话，通过广播的方式，先到先得，一个网络中不能有多台DHCP
+
+虚拟机A：
+    1，装包dhcp
+    # yum -y install dhcp
+
+    2,修改配置文件
+    # vim /etc/dhcp/dhcpd.conf
+    末行模式：r /usr/share/doc/dhcp*/dhcpd.conf.example
+    开删
+    #   see dhcpd.conf(5) man page
+    subnet 10.5.5.0 netmask 255.255.255.224 {
+    ......
+    max-lease-time 7200;
+    }
+
+    修改为
+    subnet 192.168.4.0 netmask 255.255.255.0 {
+    range 192.168.4.100  192.168.4.200;
+    option domain-name-servers 192.168.4.7;
+    option routers 192.168.4.254;
+    default-lease-time 600;
+    max-lease-time 7200;
+    }
+
+
+网络装机
+    PXE：在操作系统运行之前的，预先启动执行的环境
+
+服务端A：
+一、dhcp配置，指定next-server
+    1,装包dhcp，修改配置文件
+    # vim /etc/dhcp/dhcpd.conf
+    subnet 192.168.4.0 netmask 255.255.255.0 {
+     range 192.168.4.100  192.168.4.200;
+     option domain-name-servers 192.168.4.7;
+     option routers 192.168.4.254;
+     default-lease-time 600; 
+     max-lease-time 7200;
+     next-server 192.168.4.7;
+     filename "pxelinux.0";    #指定网卡引导文件名
+    }
+
+    2,重起dhcpd服务			    
+    # systemctl restart dhcpd
+
+    pxelinux.0 文件由装一个软件包自动生成 
+
+二、搭建tftp服务
+
+    tftp：简单的文件传输协议  端口：69
+    默认共享路径：/var/lib/tftpboot
+
+    1,装包tftp-server，重起服务
+    # yum -y install tftp-server
+    # systemctl restart tftp
+    # systemctl enable tftp
+
+    2,部署pxelinux.0文件
+    # yum provides */pxelinux.0           #查询仓库生成pxelinux.0文件的软件包
+    # yum -y install syslinux      
+
+    # rpm -ql  syslinux |grep pxelinux.0   #查询软件包安装清单（查询这个包内pxelinux.0文件的地址）
+    /usr/share/syslinux/gpxelinux.0
+    /usr/share/syslinux/pxelinux.0
+
+    # cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/
+
+    3,部署菜单文件
+    # mkdir /var/lib/tftpboot/pxelinux.cfg     创建文件架（固定格式）
+    # ls /var/lib/tftpboot/
+
+    在光盘中添加一个7.4系统
+    # mount /dev/cdrom /mnt
+    # ls /mnt/isolinux/
+
+    # cp /mnt/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default
+
+    # ls -l /var/lib/tftpboot/pxelinux.cfg/default
+    # chmod 644 /var/lib/tftpboot/pxelinux.cfg/default
+    # ls -l /var/lib/tftpboot/pxelinux.cfg/default
+
+    4,部署启动内核 启动驱动程序
+    # cp /mnt/isolinux/vmlinuz /mnt/isolinux/initrd.img /var/lib/tftpboot/
+
+    # ls /var/lib/tftpboot/
+    initrd.img    pxelinux.0     pxelinux.cfg  vmlinuz
+     # 启动驱动程序                                       #启动内核 
+
+
+    5,部署图形的模块 背景图片
+     # cp /mnt/isolinux/vesamenu.c32 /mnt/isolinux/splash.png /var/lib/tftpboot/
+  
+     # ls /var/lib/tftpboot
+     initrd.img  pxelinux.cfg  vesamenu.c32 pxelinux.0  splash.png    vmlinuz  
+     
+    6,修改菜单文件内容
+     # vim  /var/lib/tftpboot/pxelinux.cfg/default
+     default vesamenu.c32  #加载图形的模块
+     timeout 60            #读秒的时间
+       .......
+     menu background splash.png      #指定背景图片
+     menu title PXE Server NSD1803   #指定标题
+       .......
+
+    label linux
+      menu label Install RHEL7   #显示选项内容
+      kernel vmlinuz             #指定启动内核
+      append initrd=initrd.img   #指定启动驱动程序
+      
+三、搭建Web服务，共享光盘所有内容
+     1.安装软件包
+    # yum -y install httpd
+  
+     2.创建目录 
+    # mkdir /var/www/html/rhel7
+    # mount /dev/cdrom  /var/www/html/rhel7
+    # ls /var/www/html/rhel7
+    
+    # systemctl restart httpd
+    # systemctl enable httpd
+
+     3，测试
+    # firefox 192.168.4.7/rhel7
+
+
+四、部署应答文件，无人值守安装
+
+     1，图形生成应答文件的工具  system-config-kickstart   
+    # yum  -y install system-config-kickstart
+
+     2.修改Yum仓库标识，选择图形工具配置
+    # vim /etc/yum.repos.d/rhel7.repo 
+     [development]
+
+    # system-config-kickstart
+
+     3，利用Web服务，共享应答文件
+    # cp /root/ks.cfg  /var/www/html
+    # ls /var/www/html
+   
+     4，修改菜单文件指定应答文件
+    # vim /var/lib/tftpboot/pxelinux.cfg/default
+    menu label Install RHEL7
+    menu  default                 #读秒之后默认的选择
+    kernel vmlinuz
+    append initrd=initrd.img ks=http://192.168.4.7/ks.cfg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

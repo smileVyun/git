@@ -1,0 +1,106 @@
+以太网MAC地址
+
+    1字节=8比特
+    物理地址= 硬件地址= MAC地址（16进制）48比特 全球唯一
+
+交换机工作原理
+
+    学习 源MAC地址
+     |
+    广播
+     |
+    转发 （46-1500字节）
+     |
+    更新  1，老化时间300s  2，连接设备的端口发生增减
+
+
+交换机：（全双工，分割冲突域）
+    # show mac-address-table
+    查看MAC地址
+
+    windows上： ipconfig /all
+    可查看MAC地址 
+
+
+VLAN概述
+
+    虚拟局域网  将一个广播域分为多个广播域 （0-4095个）
+    作用： 广播控制
+           安全性
+	   带宽利用
+	   延迟降低
+
+    (config)# vlan 5
+    创建vlan 5
+
+    (config-valn)# name vlan5
+    起名字（=yum 描述信息，可不起名字）
+
+    (config)# no valn2
+     删除
+
+    (config)# intetface fastEthernet 0/2
+              进入0/2接口模式
+
+    (config-if)# switchpoot access valn 5
+                 将0/2接口  加入到  vlan5
+
+     # show lan
+     查看vlan配置
+
+    (config)# intetface vlan 5
+              进入vlan 5
+
+    (config-if)# ip address 192.168.0.5 255.255.255.0
+                 配置vlan 5 ip地址 子网掩码要打全
+
+    (config)# ip default-gateway 192.168.0.254
+              配置网关
+
+    (config)# intetface range fastEtherne 0/1-5  or （0/1，f0/3）
+              进入0/1-5接口模式                     进入0/1 0/3接口
+
+   
+    # show interfaces fastEthernet 0/3 switchport
+      查看0/3端口的信息
+
+    (config-if)# swichport mode trunk 
+                要先进入到0/3端口模式，再把模式改为trunk（中继模式）
+
+IEEE 802.1Q 为vlan标示种类 公有的标记方式
+
+    (config-if)# swichport trunk allowed vlan remove（add） 10
+                 在trunk通道中 把vlan10移除（增加）
+
+以太通道（端口聚集，链路聚合，以太端口捆绑）
+
+    优点：提高更高的带宽，可靠性增加，备份
+    (config-if)# intetface range fastEtherne 0/3-4
+    (config-if-range)# channel-group 1 mode on
+                       把0/3-4 变为以太通道1
+
+    (config)# intetface port-channel 1
+                 进入以太通道1
+    (config-if)# swichport mode trunk 
+                 设置为trunk
+   注(config-if)# no channel-group 1 mode on
+                 进入需要no掉的接口 no掉
+    # show etherchannel summary
+      查看以太通道信息
+    
+
+1，规划IP地址
+2，添加Vlan
+3，添加端口到Vlan
+
+
+
+
+
+
+
+
+
+
+
+

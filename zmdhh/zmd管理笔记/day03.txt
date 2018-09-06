@@ -1,0 +1,60 @@
+grep less 
+绿色文件：可以执行的程序
+
+linux 默认解释器：/bin/bash （程序） 绿色
+
+用户----解释器----内核----硬件
+
+快捷键：ctrl + c ：结束当前正在执行的命令
+        Esc  + . ：粘贴上一个命令的参数
+
+
+        ctrl + l ： 清空
+             + u ： 清空光标前的参数
+             + w ： 删除一部分参数 按空格界定
+
+光盘文件----光驱设备  /dev/hdc  IDE接口（基本不用）
+                      /dev/sr0  scsi接口
+
+浅蓝色：快捷方式  
+
+查看光驱设备位置 ：ls /dev/cdrom ----- ls -l /dev/cdrom
+
+mount（挂载）  设备 访问点 mount=提供设备访问点  
+例：mkdir /dvd  mount /dev/cdrom  /dvd     =先创建文件  让光驱可以在文件里查看
+                  光驱位置       要打开的目标文件
+
+umount(卸载）  /dvd 卸载在dvd文件下的光驱内容
+
+ls    -l  查看详细属性
+      -A  查看所有文件 包括隐藏文件
+      -d  显示目录本身属性  ls -ld /root    文件架的
+      -h  显示内容的容量单位 ls-lh /root    内容里的
+
+    zmd~: 表示用户zmd的家目录
+
+useradd 111： 创建用户111
+
+     * ： 例 ls /dev/tty* or ls/dev/*30    所有数据  
+     ？： 例 ls /dev/tty？  只会除了tty1   tty2 之类的单个字符
+
+    [3-8]  查找3-8 [  ]只能用个位数
+    {1,3,5,8,11}  用于指定的
+
+alias hh='hostname'  hh=外号  hostname=名字 把命令简单化
+      unalias hh  删除别名
+
+ mv 移动或改名 
+
+ rm -r 递归删除
+ rm -rf 强制删除
+
+ mkdir -p 创建递归式的文件
+ 
+ cp -r 复制文件夹   复制多个文件时  最后个为要复制到的目的地
+ \cp -r 复制文件并覆盖   在本次操作中，临时取消别名
+ \ = 临时取消别名
+ . = 当前目录
+ 应用：在dvd目录下  cp -r /home  . =把home 复制到dvd中
+
+ 

@@ -1,0 +1,75 @@
+
+   # cat /etc/shells  查看电脑内所有的解释器
+
+   # vim /etc/profile
+     HISTSIZE=100
+     修改历史命令记录条数
+
+   # history -c    
+   # rm -rf ~/.bash_history 
+ or# > ~/.bash_history
+     清空历史记录
+   # unset  名称   #取消脚本定义
+
+   # ls sdh /root/ > a.log 2> b.log
+     查看这两个文件  把正确信息输入到a.log  把错误信息输入到b.log
+
+注意：在for 循环中 注意要被错误信息2>> 追加到指定文件
+
+   # vim/root/user.log
+   #!/bin/bash
+  date > 55.log
+  for i in {1..10}
+  do
+      useradd user$i 2>>55.log
+      echo "123" | passwd --stdin user$i > /dev/null
+  done
+  
+  # vim/root/halo1.sh
+  #!/bin/bash
+  exit
+
+  # bash /root/halo1.sh     有子进程 
+    退出bash
+  # sh /root/halo1.sh       有子进程
+    退出sh
+  # source /root/halo1.sh   没有子进程 =./root/halo1.sh
+    =在当前终端上操作退出
+
+  # nb=10
+  # echo ${nb}RMB
+  10RMB
+
+  [root@server0 ~]#PS1=[zmd]#   PS1为修改一级提示符的样子
+  [zmd]#
+
+  #PS2=*!   	PS2为修改二级提示符的样子
+  #ls \
+  *!
+  # 要永久修改则放入到 /etc/profile
+
+  # env  可查看所有环境变量     # set  可查看所有变量（包括自己设置的）
+
+  $$  进程号 PID
+
+  双引号的应用:界定一个完整字符串
+  单引号的应用:界定一个完整字符串,并且取消含义
+  # wxy=159
+  # echo "$wxy"
+  159
+  # echo '$wxy'
+  $wxy
+
+  stty -echo  将显示功能关闭
+  stty  echo
+
+  # export nb=1234 全局配置定义（重启后失效）
+ =# nb=1234  
+  # export
+
+
+
+
+
+
+

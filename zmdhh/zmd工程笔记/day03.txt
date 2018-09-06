@@ -1,0 +1,194 @@
+SElinux
+    基于内核的安全机制
+    保护的对象：文档（文本+目录），进程。基本包括所有
+    -enforcing   #强制
+    -permissive  #宽松状态 
+    -disabled    #彻底禁用（和disabled的状态有关 修改配置文件，并重起）
+
+    # setenforce 0 变为宽松模式 （临时）
+    # getenforce 查看SElinux状态
+
+    # vim /etc/selinux/config 永久修改SElinux状态
+      SELINUX=permissive
+
+配置用户环境
+    vim /~（家目录）/.bashrc 对单个用户的修改
+
+    vim /etc/.bashrc 对所有用户的修改 （都要重起终端）
+
+ 
+ 
+    基本Web服务
+    
+    1.服务端虚拟机server，安装可以提供Web服务软件
+       *Apache（httpd)    Nginx tomcat
+      # yum -y install httpd
+
+    2.server,启动httpd，并设置开机自起服务
+      # systemctl restart httpd  重起服务
+      # systemctl enable httpd   设置开机自起 
+
+    3.本机测试访问
+      # firefox 172.25.0.11
+
+    4.书写页面文件
+      默认存放页面文件的路径：/var/www/html
+      默认页面文件名字：index.html
+   
+      写网站语音：html
+      <marquee><font color=yellow><h1>but just like you
+         滚动       字体颜色     字体大小
+ 
+        http：超文本传输协议
+    基本FTP服务：文件传输协议
+    1.服务端server，安装可以提供FTP服务软件   
+    # yum -y install vsftpd
+ 
+    2.启动vsftpd服务，设置开机自起
+    # systemctl restart vsftpd
+    # systemctl  enable vsftpd
+
+    3.测试ftp
+    默认FTP共享的路径：/var/ftp/
+
+    # firefox ftp://172.25.0.11 查看共享文件地址
+
+
+
+防火墙策略
+
+    作用：隔离，过滤入站请求，允许出战
+
+    硬件防火墙
+    软件防火墙
+
+    RHEL7的防火墙
+      系统服务：firewalld
+      管理工具：firewalld-cmd（纯命令），firewalld-config（图形工具）
+    
+    匹配规则的原则：匹配及停止
+
+    预设安全区域
+     根据所在的网络场所分区  
+      -public：仅允许访问本机的sshd，dhcp，ping少数几个服务
+      -trusted：允许任何访问
+      -block：明确拒绝任何访问
+      -drop：丢弃所有来访的数据，节省资源
+
+    防火墙决定，客户端请求进入某个区域的规则
+     1.查看客户端请求中源IP地址，符合区域规则的就可以进入
+
+     2.否则会进入默认区域 public
+
+     默认区域的修改
+     # firewall-cmd --get-default-zone 查看区域的状态
+       public
+     # ping -c 2 172.25.0.11   能Ping通 
+
+     # firewall-cmd --set-default-zone=block 修改区域状态
+     # ping -c 2 172.25.0.11   不能ping通，有回应
+
+     # firewall-cmd --set-default-zone=drop 
+     # ping -c 2 172.25.0.11   不能ping通，没有回应
+
+     
+
+
+互联网常见的服务协议
+    http：超文本传输协议       端口号：80
+    FTP：文件传输协议                  21
+    https：安全的超文本传输协议        443
+    DNS：域名解析协议                  53
+    telne：远程管理协议                23
+    smtp：邮件协议，用户发邮件的协议   25
+    pop3：邮件协议，用户收邮件的协议   110
+    tftp：简单的文件传输协议           69
+
+
+默认区域的服务添加
+  在server上设置  
+    # firewall-cmd --zone=public --list-all #查看public区域的服务
+    # firewall-cmd --zone=public --add-service=http #添加http服务 （remove为删除）
+    # firewall-cmd --zone=public --list-all #查看public区域的服务
+
+  desk上访问  
+    # firefox http:172.25.0.11 #可以访问
+    # firefox ftp://172.25.0.11 #不可以访问
+
+
+策略的永久配置
+
+    -永久（permanent）
+     # firewall-cmd --reload #重新加载防火墙配置文件
+
+     # firewall-cmd --zone=public --list-all #查看public内的所有服务
+
+     # firewall-cmd --permanent --zone=public --add-service=http #在public区域内永久添加http服务
+
+     # firewall-cmd --reload #重新加载防火墙配置文件
+
+     # firewall-cmd --zone=public --list-all #查看public内的所有服务是否更新
+
+
+添加源IP的规则设置
+
+     # firewall-cmd --zone=block --list-all #查看block内的所有服务
+
+     # firewall-cmd --zone=block --add-source=172.25.0.10 在block中添加ip 172.25.0.10 ，使这个ip进入block区域（不能进行任何操作）
+
+     # firewall-cmd --zone=block --list-all #查看block内的所有服务
+
+工作时防火墙，设置的方式
+
+     严格：默认区域为drop，把允许的ip单独放入trusted
+     宽松：默认区域为trusted，把拒绝的ip单独放入drop
+
+
+端口(port)：编号，标识作用，标识每个服务
+    
+     更改端口(端口转发）
+     # firewall-cmd --reload
+
+     # firewall-cmd --zone=public --list-all
+
+     # firewall-cmd --permanent --zone=public  --add-forward-port=port=5423:proto=tcp:toport=80   #永久更改public区域内，端口号5423改为80
+     # 添加 -永久-转发-端口=端口=5423:协议=tcp:转发端口=80   
+ 
+     # firewall-cmd --reload
+ 
+     # firewall-cmd --zone=public --list-all
+
+
+
+配置聚合连接（网卡绑定，链路聚合）
+
+     1，创建虚拟网卡 #man teamd.conf （查看帮助信息）
+
+     # nmcli connection add type team con-name team0 ifname team0 autoconnect yes config '{"runner": {"name": "activebackup"}}' #创建虚拟网卡team0
+
+     # ifconfig
+
+     (# nmcli connection delete team0) #删除虚拟网卡
+
+     2，添加成员（添加奴隶）
+
+     # nmcli connection add type team-slave con-name team0-1 ifname eth1 master team0   #把网卡eth1 添加到team0虚拟网卡中
+
+     （# nmcli connection delete team0-1） #删除team0-1
+
+     3，设置team0 IP地址
+     # nmcli connection modify team0 ipv4.method manual ipv4.addresses '192.168.1.1/24' connection.autoconnect yes #设置team0的IP地址
+
+     4，激活所有配置
+     # nmcli connection up team0
+     # nmcli connection up team0-1
+     # nmcli connection up team0-2
+
+终极验证
+     # teamdctl team0 state  查看team0的具体工作信息
+     # ifconfig eth1 down    禁用网卡eth1
+
+
+
+
+

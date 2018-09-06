@@ -1,0 +1,229 @@
+shell脚本：可以执行文件，可以实现某种功能
+
+     # vim /root/hello.sh
+       echo hello world
+   
+     # cat /root/hello.sh
+       echo hello world
+
+     # chmod +x /root/hello.sh  给所有人加权限
+
+     # /root/hello.sh 运行脚本
+
+shell的组成：1.#! 环境声明
+             2.# 注释文本
+             3.可执行代码
+
+一般脚本采用非交互式
+
+ 例：# vim /root/user.sh
+       #!/bin/bash
+       useradd zhangsan
+       echo 123456 | passwd --stdin zhangsan
+
+     # chmod +x /root/user.sh
+
+     # /root/user.sh
+
+重定向输出
+         
+     >：将前面命令的正确输出，写入到文本文件中
+     2>：将前面命令的错误输出，写入到文本文件中
+     &>：将前面命令的正确+错误 输出，写入到文本文件中
+     >&2:前面的命令为错误信息（例： echo 'nnn' >&2 ）
+
+补充
+    ‘ ’：取消所有特殊字符意义
+     $[ ]:运算 + - * /  一般和echo连用
+     例：# echo $[1*8] 
+         8
+         # echo $[10%3] (%运算结果为余数）
+         1
+
+     ``与$()：将命令的输出结果，作为参数
+     例：# mkdir $(date +%F)
+         2018-04-11
+         #mkdir /cpt/nsd-$(date +%F)
+         nsd-2018-04-11
+
+     黑洞设备：/dev/null (=垃圾场）
+
+     变量： (容器）
+     定义：变量名=存储的值（变量值）
+     例：vim /root/user.sh 
+         #!/bin/bash
+         abc=nsd11
+         useradd $abc &> /dev/null
+         echo $abc创建成功
+         echo 123456 | passwd --stdin $abc &> /dev/null
+         echo $abc用户密码设置成功
+
+     read：记录用户在键盘上的输出结果
+     read -p '内容' 变量名  （为变量产生交互式回答）
+
+变量
+     变量名由数字，_，字母组成，区分大小写。开头不能为数字
+     引用变量值：$变量名
+     查看变量值：echo $变量名 or echo {变量名}
+     例：# a=rhel
+         # echo $a
+           rhel
+      
+         # echo ${a}7
+           rhel7
+
+
+环境变量：由系统定义赋值完成，用户可以直接调用
+
+    USER：储存当前登陆的用户名
+
+*位置变量：由系统定义赋值完成，用户可以直接调用
+ 
+    # vim /root/test.sh
+      #!/bin/bash
+      cat -n $1 | head -$2
+
+    # chmod +x /root/test.sh
+    
+    # /root/test.sh /etc/passwd 3
+      1 root:x:0:0:root:/root:/bin/bash
+      2	bin:x:1:1:bin:/bin:/sbin/nologin
+      3	daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+预定义变量
+   
+    $#  位置变量参数的个数
+
+    $*  展示位置变量的具体参数
+
+    $?  程序退出后的状态值 0正常 其他就是不正常（判断上一个命令是否正确）
+    一般与echo连用 echo $?
+
+自定义变量：自己设置的变量
+
+条件测试与选择 格式：[ -e /etc ] 
+
+    查看文件状态
+         -e : 判断文档是否存在，存在为真
+         -d : 存在且为目录，才为真
+         -f : 存在且为文件，才为真
+         -r : 存在且具备读权限，才为真
+         -w : 存在且具备写权限，才为真
+         -x : 存在且具备执行权限，才为真
+
+    比较整数大小(带e字母都有等于二字，g代表大于，l代表小于)
+      -gt：大于
+      -ge：大于等于
+      -eq：等于
+      -ne：不等于
+      -lt：小于
+      -le：小于等于
+
+字符串对比
+
+   ==：字符串相等
+   !=：字符串不相等
+
+
+  echo $RANDOM：系统随机数
+
+if双分支处理
+ 
+   # vim /opt/if02.sh
+     #!/bin/bash
+     if  [ $USER == root ];then
+          echo 当前是管理员                1
+     else
+          echo 当前是普通用户
+     fi
+
+案例2
+
+#!/bin/bash
+read -p '请输出0到9之间的一个数字：' num1
+num2=$[$RANDOM%10]
+
+if [ $num1 -eq $num2 ];then
+      echo 你可真是个小机灵鬼
+else
+      echo 你好像不大行哦？
+      echo $num2
+fi
+    
+多条件分支
+    if [  ];then
+    elif [  ];then
+    elif [  ];then
+    elif [  ];then
+    else
+    fi
+
+例：#!/bin/bash
+    read -p '请输入lol的rank分:' num
+    if [ $num -ge 2500  ];then
+    echo 王者
+    elif [ $num -ge 2300  ];then
+    echo 带师
+    elif [ $num -ge 2100  ];then
+    echo 钻石
+    elif [ $num -ge 1800  ];then
+    echo 铂金
+    elif [ $num -ge 1500  ];then
+    echo 黄金
+    elif [ $num -ge 1200  ];then
+    echo 臭弟弟
+    elif [ $num -ge 900  ];then
+    echo 你在玩你马呢
+    else
+    echo 建议自杀一哈
+    fi
+
+
+
+for循环处理
+   循环：重复性执行一个操作
+
+   for 变量名 in 值列表
+   do
+     循环的操作
+   done
+  
+   造数工具{起始数字..结束数字}
+   例：#!/bin/bash
+       for a in {1..20}
+       do
+           useradd $a
+           echo 恭喜您，生出用户$a^.^zz
+       done
+
+
+案例4:编写一个判断脚本
+
+在 server0 上创建 /root/foo.sh 脚本
+
+1)当运行/root/foo.sh redhat,输出为fedora
+
+2)当运行/root/foo.sh fedora,输出为redhat
+
+3)当没有任何参数或者参数不是 redhat 或者
+fedora时,其错误输出产生以下信息: 
+/root/foo.sh  redhat|fedora
+
+[root@server0 /]# vim  /root/foo.sh
+ #!/bin/bash
+ if [  $#  -eq  0  ];then                    #判断是否输入了位置参数
+   echo  '/root/foo.sh   redhat|fedora' >&2  #把正确变成错误输出
+       exit  2                               #脚本退出返回值
+ elif  [  $1  ==  redhat  ];then
+   echo fedora
+ elif  [  $1  ==  fedora  ];then
+   echo redhat
+ else
+   echo   '/root/foo.sh   redhat|fedora'  >&2
+   exit  3                                   #脚本退出返回值
+ fi
+
+
+
+
+

@@ -1,0 +1,171 @@
+云计算应用管理
+    磁道： track  扇区：sector(默认512字节）
+    识别硬盘--分区规划--格式化--挂载使用
+ 
+    分区规划
+    MBR（msdos）：主引导 记录模式
+    3个主分区 1个扩展分区（可分为多个逻辑分区）
+    最大支持容量为2.2TB的磁盘
+    扩展分区不能格式化
+  
+    GPT： 128个主分区 最大支持容量为18EB的磁盘 
+    
+    修改硬盘的分区表
+    fdisk 硬盘设备
+    
+    fdisk  -m 列出指令帮助
+
+一，查看系统所有的磁盘设备
+    lsblk 
+
+二，划分新的分区
+    # fdisk /dev/vdb  进入分区界面
+   在Last 扇区后  输入 +2G（要分的内存大小）
+   
+    n 创建新的分区
+    p 查看分区表
+    n 创建新的分区
+    d 删除分区
+    w 保存并退出
+  
+三，格式化分区
+    mkfs工具集
+    mkfs.ext3
+        .ext4
+        .xfs
+   
+    例：# mkfs.ext4 /dev/vdb1
+        格式化 vdb1磁盘 文件格式为ext4
+
+        # blkid /dev/vdb1       查看vdb1的文件格式 没有数据就是没有格式化
+        /dev/vdb1: UUID="9206fcca-c259-46fc-b3c9-882e9be8e45a" TYPE="ext4"
+
+四，挂载使用
+    例：# mkdir /mypart1
+        # mount /dev/vdb1 /mypart1   挂载
+         
+    df -h  查看文件系统（分区）容量 挂载点
+    
+五，继续划分分区
+    partprobe 刷新分区
+
+六，划分扩展分区，逻辑分区
+
+
+总结：1.查看所有磁盘   lsblk
+      2.划分分区       fdisk /dev/vab
+      3.刷新           partprobe
+      4.格式化分区     mkfs.ext4 /dev/vdb1
+      5.查看文件系统   blkid /dev/vdb1
+      6.挂载           mount  （df-h 查看挂载点）
+      
+实现开机自动挂载
+
+    vim /etc/fstab配置文件
+    file system table
+
+    配置文件 /etc/fstab 的记录格式
+    设备路径  挂载点  类型      参数          备份标记     检测顺序
+例：/dev/vdb1 /mypart1 ext4  defaults（默认）  0(不备份）  0（不检测） 
+    mount -a 检测自动挂载配置文件 是否正确 
+    df -h 查看挂载点
+
+LVM逻辑卷
+  作用： 1.整合分散的空间
+         2.逻辑卷空间可以扩大
+         
+  新建逻辑卷：将众多的物理卷（pv）组成卷组（vg），把卷组划分为逻辑卷（lv）
+ 
+   
+    功能        物理卷管理    卷组管理   逻辑卷管理
+  Scan（扫描）
+
+
+一，逻辑卷的创建
+    
+    1，建立vg卷组 (没有格式化过的分区）
+    例:# vgcreate nsd /dev/vdc[1-2] 创建卷组名字nsd 包括vdc1-2
+       # vgs 查看卷组信息
+       # pvs 查看物理卷信息
+       # lvs 查看逻辑卷信息
+
+    2，创建逻辑卷（lv）
+    例：# lvcreate -n vo -L 16G nsd 创建逻辑卷名字为vo 大小16G 从卷组nsd中扣
+
+    3，格式化使用
+    例：# mkfs.ext4 /dev/nsd/vo 格式化
+    
+        # blkid /dev/nsd/vo  查看是否格式化成功
+    
+        # vim /etc/fstab 修改随机自起 配置文件
+         /dev/nsd/vo /mylvm ext4 defaults 0 0
+
+        # mkdir /mylvm 创建挂载点
+
+        # mount -a 确认mount成功
+   
+        # df -h 查看逻辑卷挂载情况 容量大小
+
+
+逻辑卷的扩大 （ 支持线上工作 ）
+
+ 一，卷组有足够大的剩余空间  
+   
+    1，扩建逻辑卷的空间
+    # lvextend -L 18G /dev/nsd/vo vo逻辑卷扩展到18G 
+    # lvs
+
+    2，扩建逻辑卷的文件系统 (resize2fs：ext4扩展命令 xfs_growfs：xfs 扩展命令）
+    # df -h
+    # resize2fs /dev/nsd/vo 扩建逻辑卷vo的文件系统
+    # df -h
+  
+ 二，卷组没有足够大的剩余空间
+
+    1，扩建卷组
+    # vgextend nsd /dev/vdc3 把vdc3分区增加到卷组里
+    # vgs    
+
+    2，扩建逻辑卷的空间
+    # lvextend -L 25G /dev/nsd/vo vo逻辑卷扩展到25G
+    # lvs
+
+    3，扩建逻辑卷的文件系统 (resize2fs：ext4扩展命令 xfs_growfs：xfs 扩展命令）
+    # df -h
+    # resize2fs /dev/nsd/vo 扩建逻辑卷vo的文件系统 
+    # df -h
+
+ PE：卷组划分空间的单位
+
+     # vgdisplay nsd  显示卷组详细信息
+    
+     # vgchange -s 1M nsd 改变pe size为1M
+     # vgdisplay nsd 查看nsd详细信息 pe大小
+
+     # lvcreate -n lvtest2 -L 250M nsd 创建逻辑卷名字为lvtest2 大小为250M，从卷组nsd中索取
+
+     # lvcreate -n lvtest3 -l 50  nsd 创建逻辑卷名字为lvtest3 大小为50个pe大小，从卷>组nsd中索取
+
+
+逻辑卷的删除
+    
+    首先删除逻辑卷，再删卷组，再删物理卷
+
+    # umount /mylvm/
+
+    # lvremove /dev/nsd/vo
+    
+    # lvs
+    # vgs
+
+
+
+
+
+
+
+
+
+
+
+

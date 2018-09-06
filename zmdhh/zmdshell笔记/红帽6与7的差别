@@ -1,0 +1,79 @@
+rhel6与7的不同处
+
+1，引导程序不同
+   在6中修改Selinux
+   # vim /boot/grub/grub.conf
+   在kernel这行末尾加入 selinux=0
+
+   在7中修改Selinux
+   # vim /etc/sysconfig/grub
+   找到GRUB_CMDLINE_LINUX这行在末尾加 selinux=0  注:(selinux=0 为禁用)
+   # grub2-mkconfig -o /boot/grub2/grub.cfg
+   重新生成配置，系统自动修改配置文件
+   # sestatus 可查看selinux状态
+
+2，修改网卡名字
+   在7中使用
+   # biosdevname=0 net.ifnames=0  # 修改网卡名称为eth(x)
+
+3，破解密码
+   在6中使用
+   开机按e 找到kernel这行 按e进入
+   在行末输入 single 按enter 回到首页
+   选择第一个按b 进入系统  就可以修改密码
+
+4，服务管理
+   在6中
+   init管理
+   # cd /etc/rc.d/init.d/
+   所有服务都在这文件内，需要什么服务就进指定板块制作软连接
+
+   # runlevel  查看当前运行级别
+
+   # chkconfig --list  可查看本机所有的服务
+
+   # service sshd (status start ....) = 7中的systemctl start sshd 
+
+   # chkconfig --level 2345 sshd on  设置开机自启
+   (原理为在当前级别创建或删除指定服务,就变成开启或关闭服务)
+
+   # yum -y install xinetd 超级服务器
+   # chkconfig 服务名字 操作
+
+5，配置网络
+   在6中(修改配置文件6和7通用)
+   # vim /etc/sysconfig/network-scripts/ifcfg-eth0
+   DEVICE=eth0
+   TYPE=Ethernet
+   ONBOOT=yes
+   BOOTPROTO=none
+   IPV6INIT=no
+   USERCTL=no
+ * BOOTPROTO="static"
+ * IPADDR="192.168.4.220"
+ * NETMASK="255.255.255.0"
+ * GATEWAY="192.168.4.254"  (*为新增的)
+
+   # service network restart  重起服务
+
+6，防火墙
+   在7上
+   # yum remove firewalld
+   # for i in mangle nat filter;do iptables -t ${i} -F
+   > iptables -t ${i} -X
+   > rmmod iptable_${i}
+   > done
+   # iptables-save
+
+   # sysctl -w net.ipv4.ip_forward=1
+   # iptables -t nat -I PREROUTING -d 176.19.7.94 -p tcp --dport 6022 -j DNAT --to 192.168.4.220:22
+       (176.19.7.94为真机IP 192.168.4.220为rhel6的IP)
+   # vim /etc/ssh/sshd_config  进入文件修改端口号为6022
+     Port  6022
+   # systemctl restart sshd  重起服务
+ 
+   # ssh -p 6022 root@176.19.7.94   用其他电脑连自己IP
+
+   # fuser -k /dev/pts/2  把pts/2用户踢出
+
+

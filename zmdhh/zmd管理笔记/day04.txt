@@ -1,0 +1,78 @@
+  要记：  /etc/red(tab) 查看系统版本
+          操作要看主机名字 hostname
+        /bin/bash =Linux默认解释器
+
+  还原虚拟机classroom /server /desktop
+
+  rht-vmctl reset classroom
+
+  root   redhat
+
+远程管理
+    默认真机远程管理虚拟机Desktop 和 server
+    ssh (对方的用户名)@(对方ip地址）
+  * ssh -X (对方的用户名)@(对方ip地址） 可以打开带图形程序件（例如 打开火狐浏览器）
+
+  ctrl + shfit + t = 重开一个新的终端
+  ctrl + pageup(down) = 切换上下终端
+
+rpm 软件包管理
+    rpm  -q +软件   查询软件包是否安装
+    rpm  -i +软件包的位置    装软件包
+  * rpm  -ivh   基本用这个 装包
+    rpm  -e +软件包的名字不带后缀   卸载软件包
+
+Yum 软件包仓库
+  * 配置文件的路径：/etc/yum.repos.d/*.repo
+    错误文件会影响正确配置文件   应先删除 /etc/yum.repos.d/*
+
+   [root@server0 ~]# rm -rf /etc/yum.repos.d/*
+   [root@server0 ~]# vim /etc/yum.repos.d/dvd.repo
+  
+   [rhel7]          #仓库标识(源标识）
+   name=nsd 1803    #仓库的描述信息（源名称）
+   baseurl=http://classroom.example.com/content/rhel7.0/x86_64/dvd/  #指定Yum仓库位置
+   enabled=1        # 1为启用文件  0不启用文件
+   gpgcheck=0       # 0为关闭检测软件包签名功能  1为开启
+   
+   [root@server0 ~]# yum repolist   #查看仓库信息
+   
+Yum 的使用
+   yum (-y) install 软件名字  安装软件包
+   xeyes &   在后台运行程序
+   killall xeyes  杀死所有这个程序的进程
+   yum  remove 软件名字  卸载软件包
+   yum clean all 清除yum内存记录
+
+wget下载工具
+   wget +软件包的URL地址  o0O O0o
+
+配置网络
+1，修改主机名字  vim /etc/hostname  先改/etc/hostname 内的主机名字
+                 cat /etc/hostname  查看主机名字
+                 exit   退出
+                 ssh  
+
+2，配置ip地址，子网掩码，网关地址
+   
+   nmcli connection show 查询识别的网卡名称
+   
+  # nmcli connection modify 'System eth0' ipv4.method manual ipv4.addresses '172.25.0.100/24 172.25.0.254' connection.autoconnect yes =  修改 nmcli connection '网卡名字'ipv4.方法 手工配置  ipv4.地址‘IP地址/子网掩码 网关地址’每次开机自动启用配置 
+   
+   nmc(tab) con(tab) up ‘ S（tab）’激活 更新成新的IP地址 关闭终端 重新连接新的IP地址
+   
+3,配置DNS服务器地址
+  
+  
+
+  /etc/resolv.conf  DNS服务器地址的配置文件
+  
+  nslookup desktop0.example.com  查看网站的IP地址
+
+
+
+
+
+
+
+

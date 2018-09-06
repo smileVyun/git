@@ -1,0 +1,127 @@
+用户管理   /etc/passwd   =户口本
+    root：x：0：0：root：/root：/bin/bash   ???
+
+   用户名：密码占
+    用户帐号：1.可以登陆操作系统
+              2.实现访问控制（不同的用户权限不同）
+
+    组帐号：方便对用户管理（权限方面）
+
+    唯一标识： UID （用户帐号）  GID （组帐号）
+              管理员的UID：0 
+
+
+    组分为： 基本组（基本是用户自己名字的组）和附加组  Linux用户至少属于一个组 
+               or                               or
+             私有组                        从属组/公共组
+
+    useradd -u 指定用户id      useradd -u 1200  usd1803
+            -d     家目录路径
+            -s     登陆shell
+            -G     附加组 useradd -G tarena（组的名字） nsd07(添加用户名）
+          
+    /sbin/nologin :禁止用户登陆系统  useradd -s /sbin/nologin nsd09
+
+   管道  | :将前面命令的输出结果，交由后面命令再处理一次，最后的输出内容以最后的命令为准
+
+   重定向 > （会覆盖）  :将前面命令的输出结果 作为文本内容 写入后面的路径中
+          >> （追加，另加）
+       
+   echo： 在屏幕中显示自己打的内容  
+     例： [root@server0 ~]# echo 1566
+          1566
+
+*  su - yonghu 进入用户
+  
+ 1.交互式
+     管理员  passwd + 用户 改密码
+     普通用户 passwd  改密码
+  
+ 2.非交互式
+ *  echo mima | passwd --stdin yonghu
+
+
+
+ *  etc/shadow  查看用户密码信息 
+ *  head -1 /etc/shadow
+   root:加密密码：从1970.1.1
+
+  usermod  -u 修改用户id      
+           -d     家目录路径
+           -s     shell路径
+           -G     附加组
+
+  userdel  用户名  ：删除用户  
+  userdel -r       ：连家目录一并删去
+
+管理组帐号   
+    /etc/group
+   head -1 /etc/group
+   root：x：0：
+   组名：密码：GID：组里有什么人
+
+   groupadd 组名 =添加组
+   gpasswd -a yonghu 组名=添加用户进组
+   gpasswd -d 
+   
+   groupdel 组名=删除组
+
+tar工具 备份与恢复  红色=压缩文件
+  常见的压缩格式及命令 工具：
+   gzip----  .gz
+   bzip2---- .bz2
+   xz-----   .xz
+
+   tar -zcf /opt/nsd01.tar.gz /etc/passwd  
+   tar 选项 /路径/压缩包名字  要归档的文件路径 
+
+   tar -xf /opt/nsd01.tar.gz -C /nsd/ 
+   tar 选项 /路径/压缩包名字  要释放归档的文件路径
+
+   tar -c：创建归档         
+       -x：释放归档
+       -f：取压缩包名字
+       -z  .gz(常用）   -j  .bz2  -J  .xz
+       -t：显示归档中的文件清单
+       -C:指定释放位置
+
+NTP时间同步
+
+[root@server0 ~]# date
+2018年 04月 04日 星期三 16:14:31 CST
+[root@server0 ~]# date +%Y    年
+2018
+[root@server0 ~]# date +%m    月
+04
+[root@server0 ~]# date +%d    日
+04
+[root@server0 ~]# date +%F    年 月 日
+2018-04-04
+[root@server0 ~]# date -s "2008-8-6 12:10:11"
+2008年 08月 06日 星期三 12:10:11 CST
+
+
+
+ 服务：NTP服务器为客户机提供标准时间
+
+ 服务端：classroom 时间同步服务端
+
+ 客户端： server 
+
+ 1.安装chrony客户端软件 （和服务器时间沟通的软件）
+ # yum -y  install chrony
+ # rpm -q chrony
+
+ 2.修改配置文件vim /etc/chrony.conf，指定服务端位置
+ #server 0.rhel.pool.ntp.org iburst
+ #server 1.rhel.pool.ntp.org iburst
+ #server 2.rhel.pool.ntp.org iburst
+ server classroom.example.com iburst
+
+
+ 3.启动客户端chronyd服务
+ # systemctl restart chronyd  重起服务 (systemctl 系统控制中心）
+ # systemctl enable chronyd   设置随机自启动
+
+
+

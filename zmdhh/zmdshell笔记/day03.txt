@@ -1,0 +1,83 @@
+1，for 循环
+   #!/bin/bash
+     for we in {1..5}
+     do
+       echo $we
+     done
+  
+   # seq 4 2 15
+   4
+   6
+   8
+   10
+   12
+   14
+
+   #!/bin/bash
+   for i in `seq 9`
+     do 
+      for o in `seq $i`
+        do
+          echo -ne "$i*$o=$[i*o] \t"  
+	done
+     echo -e "\v" 	 
+     done
+   注：\t 为对齐表格  \v为表格向下空一行
+
+2，while循环的使用
+
+   #!/bin/bash
+     i=1
+     while [ $i -le 10 ]
+     do
+        echo $i
+        let i++
+     done
+
+3，关于case的脚本使用
+  #!/bin/bash
+  case $1 in
+  -t)
+     touch $2
+     echo "创建$2成功";;
+  -v)
+     vim $2
+     ehco "编辑$2";;
+  -c)
+     cat $2
+     echo "查看$2";;
+  -r)
+     rm -rf $2
+     echo "删除$2";;
+   *)
+     echo "Usage $0 [-t|-v|-c|-r]file";;	
+  esac
+
+4,关于函数的调用
+  [root@server0 /]# mkcd (){
+  > mkdir /$1
+  > cd /$1
+  > }
+  [root@server0 /]# mkcd yy  # mkcd能tab
+  [root@server0 yy]# 
+
+5,# echo -e "\033[36mzmd\033[0m" (echo -e "\033[36mzmd\033)  第一个是当前输出有颜色的内容   第二个是当前窗口的颜色一直为你设置的颜色
+  zmd    # 36m 后面为输出内容
+ 
+  0x 样式
+  3x 字体颜色
+  4x 背景颜色
+
+6,死循环调用 耗尽内存卡死
+  #!/bin/bash
+  .(){
+  .|.&
+  }
+  .
+
+7，shell中break,continue,exit的使用
+
+   break可以结束整个循环
+   continue结束本次循环，进入下一次循环
+   exit结束整个脚本
+   

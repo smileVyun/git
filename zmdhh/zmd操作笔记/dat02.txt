@@ -1,0 +1,63 @@
+静态网页（图片，视频，doc文档..）
+动态网页：需要在服务器上解释(java php python..)
+
+需要用的包
+    nginx
+    mariadb-server、mariadb-devel
+    php、php-fpm、php-mysq
+
+    netstat -ltunpa = ss -ltunpa
+
+Nginx动静分离
+    # vim /usr/local/nginx/conf/nginx.conf
+
+    location ~ \.php$ {
+        root           html;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+   #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        include        fastcgi.conf;
+       }
+
+Nginx的默认错误日志文件为/usr/local/nginx/logs/error.log
+PHP默认错误日志文件为/var/log/php-fpm/www-error.log
+
+Nginx地址改写
+     # vim /usr/local/nginx/conf/nginx.conf
+     rewrite 旧地址 新地址 [选项]
+
+     rewrite /a.html  /b.html  redirect;  # a.html跳转到b.html并进行地址跳转
+
+例：修改配置文件(访问192.168.4.5/下面子页面，重定向至www.tmooc.cn/下相同的页面)
+     # vim /usr/local/nginx/conf/nginx.conf
+     rewrite ^/(.*)$ http://www.tmooc.cn/$1;   # /$1为复制(.*)$的内容
+     
+
+例：修改配置文件(实现curl和火狐访问相同链接返回的页面不同)
+     # echo "curl.wxy" > /usr/local/nginx/html/test.html
+
+     # mkdir /usr/local/nginx/html/firefox
+
+     # echo "firefox.llx" > /usr/local/nginx/html/firefox/test.html
+
+     # vim /usr/local/nginx/conf/nginx.conf
+       if ($http_user_agent ~* firefox){
+       rewrite /(.*) /firefox/$1;
+       }
+
+
+客户机测试：  # firefox 192.168.4.5/test.html
+                firefox.llx
+
+              # curl 192.168.4.5/test.html
+                curl.wxy
+
+
+rewrite      旧地址 新地址 [选项];
+[选项]
+last         加个last，匹配则不再读其他rewrite
+break        不再读其他语句，结束请求
+redirect     临时重定向
+permament    永久重定向
+ 
+

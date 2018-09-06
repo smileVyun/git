@@ -1,0 +1,209 @@
+iscsi网络磁盘
+
+   一，fdisk  划分 分区
+      # fdisk /dev/vdb
+
+      # lsblk
+      NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+      vda    253:0    0  10G  0 disk 
+      └─vda1 253:1    0  10G  0 part /
+      vdb    253:16   0  10G  0 disk 
+      ├─vdb1 253:17   0   2G  0 part 
+      ├─vdb2 253:18   0   2G  0 part 
+      ├─vdb3 253:19   0   2G  0 part 
+      ├─vdb4 253:20   0   1K  0 part 
+      ├─vdb5 253:21   0   1G  0 part 
+      └─vdb6 253:22   0   1G  0 part 
+
+   二，搭建iscsi共享存储
+      把服务器的磁盘空间按，连接到客户机并当成本地磁盘使用
+
+   搭建iscsi服务端：
+
+   1，安装提供共享存储功能的软件targetcli
+      # yum -y install targetcli
+
+   2,进行配置共享存储
+     1）建立后端存储backstore，指定后端存储时哪个分区，并取名字
+      # targetcli
+      /> ls    #查看所有配置
+
+      /> backstores/block   create  nsd   /dev/vdb1
+         后端存储/类型为块   创建   名字  实际设备路径
+
+     2）建立iqn磁盘组（创建箱子，并取名字）
+      /> iscsi/ create iqn.2018-16.com.example:server0
+
+     3）磁盘组绑定后端存储luns（将nsd装进箱子）
+      /> iscsi/iqn.2018-16.com.example:server0/tpg1/luns create /backstores/block/nsd    (iscsi/箱子名字/(tab)/luns create /b（tab）
+
+     4）设置ACL访问控制（客户端访问时声称的名字）
+      /> iscsi/iqn.2018-16.com.example:server0/tpg1/acls create iqn.2018-16.com.example:test   (test为客户端访问时声称的名字）  
+       
+
+     5）设置提供服务的IP地址
+       /> iscsi/iqn.2018-16.com.example:server0/tpg1/portals create 172.25.0.11    (设置服务端让客户端访问的IP地址）  端口：3260
+
+       /> exit 保存并退出
+
+
+   3，重起服务
+     # systemctl restart target
+     # systemctl enable target
+
+
+   客户端desktop
+
+   1，安装客户端软件
+     # yum repolist   加载yum缓存
+     # yum -y install iscsi-initiator-utils.i686
+
+   2，修改配置文件,名字为客户端声称的名字
+     # vim /etc/iscsi/initiatorname.iscsi 
+       InitiatorName=iqn.2018-16.com.example:test
+
+   3，刷新 客户端声称的名字    
+     # systemctl restart iscsid  刷新客户端声称的名字
+     # systemctl daemon-reload
+     # systemctl restart iscsid
+
+   4，寻找服务端，发现iscsi磁盘
+     man iscsiadm
+
+     # iscsiadm --mode discoverydb --type sendtargets --portal 172.25.0.11 --discover
+     172.25.0.11:3260,1 iqn.2018-16.com.example:server0
+
+   5,重起客户端iscsi服务
+     systemctl restart iscsi
+
+   6，查询磁盘
+     # lsblk
+
+
+
+数据库服务基础
+
+    数据库值有很多的库，每一个库中有很多的表格，每一个表格有很多的记录
+
+    表格：表记录（行） 表字段or表头（列）
+
+    一，安装部署MariaDB数据库，重起服务
+      # yum -y install mariadb-server
+      # systemctl restart mariadb
+     
+    二，使用MariaDB数据库
+      # mysql      #进入数据库
+
+      > show databases;           #查看所有库
+      > create database nsd1803;  #创造库
+      > drop database nsd1803;    #删除库
+      > exit                      #退出
+
+     设置数据库管理员的密码
+   
+     数据库管理员(root) 和 系统管理员(root)，不是同一用户
+     数据存放:mysql库user表   /etc/passwd
+
+     # mysqladmin -u root password 123   #为root设置密码
+
+     # mysql -u root -p
+       Enter password:       #交互式进入
+
+     # mysql -uroot -p123    #非交互式进入
+  
+     数据库主配置文件 /etc/my.cnf
+
+导入
+   1,下载数据库文件
+      # wget http://classroom.example.com/pub/materials/users.sql
+
+   2，创建库
+      # mysql -uroot -p123   
+      > create database nsd1803;
+      > show databases
+
+   3，把文件数据传输到库中
+      # mysql -uroot -p123 nsd1803 < users.sql
+      # mysql -uroot -p123
+ 
+   4,查看库中的数据
+      > show databases;        
+      > use nsd1803;        #进入nsd1803 库
+      > show tables;        #查看当前库的所有表格
+
+
+对与表格操作：增(insert)  删(delete)  改(update)  查(select)
+
+  查(select):select 表字段 from 表名
+ 
+  > select * from base;   #查询base表中的所有数据
+  
+  > select name,password from base  #查询base表中关于name，password表字段的数据
+     
+  
+查询表结构：desc 表名;
+
+数据库的授权
+
+  > grant select on nsd1803.* to lisi@localhost identified by '123';
+    grant 权限  on  哪个库   to  用户@localhost identified by '密码'
+
+
+使用数据库查询
+   有条件的查询：where
+
+   > select * from base where password='solicitous';
+   +------+-------+------------+
+   | id   | name  | password   |
+   +------+-------+------------+
+   |    3 | James | solicitous |
+   +------+-------+------------+
+   
+   > select name from base where password='solicitous';
+   +-------+
+   | name  |
+   +-------+
+   | James |
+   +-------+
+
+   > select * from base,location where base.name='Barbara' and location.city='Sunnyvale' and base.id=location.id;      #查询具体信息
+
+
+   > select count(*) from base,location where base.name='Barbara' and location.city='Sunnyvale' and base.id=location.id;    #查询个数
+  
+
+   > insert base values(6,'Barbara',123456);   #在base表中添加数据
+
+
+   > select * from base;   #查询base数据
+
+
+   > insert location values(6,'Sunnyvale');   #在location表中添加数据
+
+
+   > select * from base,location where base.name='Barbara' and location.city='Sunnyvale' and base.id=location.id;      #查询具体信息 
+
+
+   > select count(*) from base,location where base.name='Barbara' and location.city='Sunnyvale' and base.id=location.id;    #查询个数
+
+1,禁止空密码root用户访问mariadb数据库
+  
+   > select host,user,password from mysql.user where password='';
+                      # 查询什么数据 from 什么表格 where 条件='什么';
+
+   > delete from mysql.user where password='';
+                      # 删除什么表格中 where 条件='什么';
+
+   > flush privileges;   #刷新策略
+
+  
+   > select host,user,password from mysql.user #查询这3个表字段是否删除
+
+
+
+
+
+
+
+
+

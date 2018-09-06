@@ -1,0 +1,163 @@
+Nginx反向代理
+
+代理服务器又可以称做调度器
+作用：负载均衡
+     web高可用(web服务器坏了一台，仍可转发到其他web服务器上)
+
+一、配置Nginx服务器，添加服务器池，实现反向代理功能(http调度，7层调度)
+      # vim /usr/local/nginx/conf/nginx.conf
+      ...
+      upstream webs {       # webs为集群名字，可以随意定义
+             ip_hash;       (调度规则，相同客户端访问一次之后，以后都访问那个服务器)
+             server 192.168.2.100:80 weight=2 max_fails=2 fail_timeout=30; 
+             server 192.168.2.200:80 weight=1 max_fails=1 fail_timeout=30;
+	     server 192.168.2.101 down; (可以把坏掉的web服务器down掉)
+      }
+
+      server {
+             listen       80;
+             server_name  www.a.com;
+      charset utf-8;
+          proxy_pass   http://webs;     (调用集群)
+      #   root   html;
+      #   index  index.html index.htm;
+      ...
+      (weight不打默认为1，权重=2 为访问2次,max_fails=2为 连接的访问失败次数为2次算失败，fail_timeout 为连接失败30s后才会重新访问)
+
+    # nginx -s reload
+
+
+二、使用Nginx实现TCP/UDP调度器功能(4层调度)
+    解压tar包 
+    [root@proxy nginx-1.12.2]# ./configure --with-http_ssl_module --with-stream
+    # make && make install
+
+    # vim /usr/local/nginx/conf/nginx.conf
+      ...
+      stream{                (stream为模块的名字，调用stream的固定格式)
+       upstream backend {    (backend为定义的集群名字)
+       server 192.168.2.100:22;
+       server 192.168.2.200:22;
+        }
+      server {
+       listen 12345;          (12345为自定义的端口号，客户机连ssh加-p 12345就可以)
+       proxy_pass backend;    (调用之前定义的集群,tcp 不用打ssh)
+        }
+       }
+      http {
+      ...
+    # nginx -s reload
+
+
+客户机测试：
+    [root@client ~]# ssh 192.168.4.5 -p 12345
+    [root@web1 ~]# exit
+    会连接到192.168.2.100的机子
+
+
+三、Nginx常见问题处理
+1,优化并发量
+    # ab -n 2000 -c 2000 http://192.168.4.5/
+
+    # vim /usr/local/nginx/conf/nginx.conf
+    worker_processes  2;     (工作的进程数量，与cpu核心数一致)
+
+    worker_connections 65535 ; (最多可以65535个并发量)
+
+    # ulimit -a           # 查看所有属性值
+    # ulimit -Hn 100000   # 设置硬限制，临时规则
+    # ulimit -Sn 100000   # 设置软限制，临时规则，普通用户的软限制不能超过硬限制数量，超过软限制，会报警，但不会报错
+
+    # vim /etc/security/limits.conf  修改永久配置,只有重启生效
+
+    用户或组    硬限制或软限制    需要限制的项目   限制的值
+    *                soft             nofile        100000
+    *                hard             nofile        100000
+
+2,优化Nginx数据包头缓存(针对414报错)
+    # vim /usr/local/nginx/conf/nginx.conf
+    http {
+    client_header_buffer_size      1k;    // 默认请求包头信息的缓存    
+    large_client_header_buffers  4 4k;    // 请求包头部信息的缓存个数与容量
+
+    重起nginx
+
+3,浏览器本地缓存静态数据
+    # vim /usr/local/nginx/conf/nginx.conf
+      server {
+        listen       80;
+        server_name  localhost;
+        location / {
+            root   html;
+            index  index.html index.htm;
+          }
+        location ~* \.(jpg|png)$ {   
+            expires 30d;              # 客户端缓存时间为30天
+        }
+
+4,自定义报错页面
+    # vim /usr/local/nginx/conf/nginx.conf
+    error_page   404  /404.html;            # 去掉注释
+
+    # vim /usr/local/nginx/html/404.html    # 写404报错的页面内容
+    sorry,not found
+
+常见报错状态码:
+
+    200           一切正常
+    301           永久重定向
+    302           临时重定向
+    401           用户名或密码错误
+    403           禁止访问(客户端IP地址被拒绝)
+    404           文件不存在
+    414           请求URL头部过长(包头缓存数据不够用)
+    500           服务器内部错误
+   502        Bad Gateway(调度器和后台服务器值之间出问题)
+
+5,查看服务器状态信息
+    tar解包
+    # ./configure --with-http_ssl_module --with-stream --with-http_stub_status_module
+
+    # vim /usr/local/nginx/conf/nginx.conf
+           location /status {          # status为自己定义的名字
+            stub_status on;
+          #  allow (自己ip);
+          #  deny all;
+             }
+           
+验证：
+    # curl  http://192.168.4.5/status
+    Active connections: 1 
+    server accepts handled requests
+     14 14 273 
+    Reading: 0 Writing: 1 Waiting: 0 
+
+    Active connections：当前活动的连接数量(实时并发量)。
+    Accepts：已经接受客户端的连接总数量。
+    Handled：已经处理客户端的连接总数量（一般与accepts一致，除非服务器限制了连接数量）。
+    Requests：客户端发送的总请求数量。
+    Reading：当前服务器正在读取客户端请求头的数量。
+    Writing：当前服务器正在写响应信息的数量。
+    Waiting：当前多少客户端在等待服务器的响应。
+
+6,对页面进行压缩处理
+    # vim /usr/local/nginx/conf/nginx.conf
+    http {
+    ...
+    gzip on;                        // 开启压缩功能
+    gzip_min_length 1000;           // 小文件不压缩
+    gzip_comp_level 4;              // 压缩等级(1-9)
+    gzip_types text/plain text/css application;   //对特定的文件压缩,参考文件(/usr/local/nginx/conf/mime.types,搜索要的文件类型)
+
+7,服务器内存缓存
+    # vim /usr/local/nginx/conf/nginx.conf
+    http {
+    ...
+    open_file_cache   max=2000  inactive=20s;    //设置服务器最大缓存2000个文件句柄，20秒内没有人访问就会过期
+    open_file_cache_valid    60s;     //文件最大缓存有效时间是60秒，60秒后过期
+    open_file_cache_min_uses 5;       //只有访问次数超过5次会被缓存
+    open_file_cache_errors   off;     //关闭缓存报错数据
+    }
+
+    
+

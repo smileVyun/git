@@ -1,0 +1,12 @@
+
+desktop
+yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+vim /etc/yum.repos.d/123.repo
+yum repolist 
+yum -y install shadowsocks-qt5
+
+
+server0
+https://blog.csdn.net/langhong8/article/details/56009497 
+
+
